@@ -107,37 +107,51 @@ def cmd_list(m: Manager, args) -> int:
 
 
 def cmd_update(m: Manager, args) -> int:
-    client = m.client(args.client)
-    keys = None
-    if args.addons:
-        keys = [_find_addon(m, client, ref).key for ref in args.addons]
-    elif not args.all:
+    if args.all and not args.addons and not args.client:
+        # Scripted `update --all`: every client that has addons.
+        clients = [c for c in m.clients() if c.game is not None]
+    else:
+        clients = [m.client(args.client)]
+    if not args.addons and not args.all:
         # `omaforge update` with nothing named behaves like `check`.
         return cmd_list(m, argparse.Namespace(**{**vars(args), "check": True}))
-    backup = False if args.no_backup else None
-    progress = None if args.json else (lambda a: print(f"updating {a.name} {a.version} -> {a.latest.version}", flush=True))
-    res = m.update(client, keys, backup=backup, progress=progress)
-    updated = [r for r in res.results if r.new]
-    failed = [r for r in res.results if not r.ok]
-    lines = []
-    if res.backup:
-        lines.append(f"backed up WTF to {res.backup['path']}")
-    for r in res.results:
-        if r.new:
-            lines.append(f"updated  {r.name}: {r.old} -> {r.new}")
-        elif r.error:
-            lines.append(f"failed   {r.name}: {r.error}")
-        elif args.addons:
-            lines.append(f"skipped  {r.name}: {r.skipped}")
-    if not updated and not failed:
-        lines.append("everything is up to date")
-    _out(args, res.to_dict(), "\n".join(lines))
-    if args.notify and (updated or failed):
-        body = ", ".join(r.name for r in updated) or ""
+
+    rc, report, summary = 0, [], []
+    for client in clients:
+        keys = [_find_addon(m, client, ref).key for ref in args.addons] if args.addons else None
+        backup = False if args.no_backup else None
+        progress = None if args.json else (
+            lambda a, c=client: print(f"{c.label}: updating {a.name} {a.version} -> {a.latest.version}", flush=True))
+        res = m.update(client, keys, backup=backup, progress=progress)
+        updated = [r for r in res.results if r.new]
+        failed = [r for r in res.results if not r.ok]
+        report.append({"client": client.key, **res.to_dict()})
+        lines = []
+        if res.backup:
+            lines.append(f"backed up WTF to {res.backup['path']}")
+        for r in res.results:
+            if r.new:
+                lines.append(f"updated  {r.name}: {r.old} -> {r.new}")
+            elif r.error:
+                lines.append(f"failed   {r.name}: {r.error}")
+            elif args.addons:
+                lines.append(f"skipped  {r.name}: {r.skipped}")
+        if not updated and not failed:
+            lines.append("everything is up to date")
+        if not args.json:
+            print(f"{client.label}:\n  " + "\n  ".join(lines) if len(clients) > 1 else "\n".join(lines))
         if failed:
-            body += ("; " if body else "") + "failed: " + ", ".join(r.name for r in failed)
-        _notify(f"omaforge: {len(updated)} addon update(s) for {client.label}", body)
-    return 1 if failed else 0
+            rc = 1
+        if updated or failed:
+            part = f"{client.label}: {len(updated)} updated"
+            if failed:
+                part += f", failed: {', '.join(r.name for r in failed)}"
+            summary.append(part)
+    if args.json:
+        print(json.dumps(report, indent=2, default=str))
+    if args.notify and summary:
+        _notify("omaforge addon updates", "\n".join(summary))
+    return rc
 
 
 def cmd_search(m: Manager, args) -> int:
@@ -249,6 +263,28 @@ def cmd_providers(m: Manager, args) -> int:
     return 0
 
 
+def cmd_setup(m, args) -> int:
+    from omaforge import integration
+
+    home = Path.home()
+    try:
+        if args.remove:
+            menu = integration.remove_menu(home)
+            bind = integration.remove_binding(home)
+            print("removed omaforge from the Omarchy menu" if menu else "no menu entry to remove")
+            print("removed the omaforge keybinding" if bind else "no keybinding to remove")
+            return 0
+        path = integration.install_menu(home)
+        print(f"added \"WoW Addons\" to the Omarchy menu ({path})")
+        if args.keybind:
+            path = integration.install_binding(home, args.keybind)
+            print(f"bound {integration.normalize_keys(args.keybind)} to omaforge ({path})")
+    except integration.SetupError as e:
+        print(f"omaforge: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="omaforge", description="World of Warcraft addon manager for Omarchy. "
                                 "Run without arguments to open the app.")
@@ -308,6 +344,11 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("path", nargs="?")
     s.set_defaults(fn=cmd_roots)
     sub.add_parser("providers", parents=[common], help="show provider status").set_defaults(fn=cmd_providers)
+    s = sub.add_parser("setup", help="integrate with Omarchy (menu entry, optional keybinding)")
+    s.add_argument("target", choices=("omarchy",))
+    s.add_argument("--keybind", metavar="KEYS", help="also bind a key, e.g. 'SUPER + SHIFT + Z'")
+    s.add_argument("--remove", action="store_true", help="undo the integration")
+    s.set_defaults(fn=cmd_setup, json=False, offline=False, client=None)
     return p
 
 
@@ -316,6 +357,8 @@ def main(argv: list[str]) -> int:
     if args.cmd == "roots" and args.action in ("add", "remove") and not args.path:
         print("roots add/remove needs a path", file=sys.stderr)
         return 2
+    if args.cmd == "setup":
+        return cmd_setup(None, args)
     try:
         m = Manager()
         if args.offline:

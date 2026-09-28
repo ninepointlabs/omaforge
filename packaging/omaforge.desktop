@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Omaforge
+GenericName=WoW Addon Manager
+Comment=Install and update World of Warcraft addons
+Exec=omaforge
+Icon=omaforge
+Terminal=false
+Categories=Game;Utility;
+Keywords=wow;warcraft;addons;curseforge;wowinterface;bigwigs;
+StartupWMClass=omaforge

@@ -1,0 +1,48 @@
+# Maintainer: Tim <tim@ninepointlabs.com>
+pkgname=omaforge
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='World of Warcraft addon manager for Omarchy (CurseForge, WoWInterface, GitHub)'
+arch=('any')
+url='https://github.com/ninepointlabs/omaforge'
+license=('MIT')
+depends=(
+  'hicolor-icon-theme'
+  'python>=3.14'
+  'pyside6'
+  'qt6-declarative'
+  'qt6-svg'
+  'xdg-utils'
+)
+makedepends=(
+  'python-build'
+  'python-installer'
+  'python-setuptools'
+  'python-wheel'
+)
+checkdepends=('python-pytest')
+optdepends=(
+  'libnotify: desktop notifications from `omaforge update --notify`'
+  'xdg-desktop-portal: native file and folder pickers'
+)
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cd "$pkgname-$pkgver"
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  QT_QPA_PLATFORM=offscreen python -m pytest -q
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 packaging/omaforge.desktop -t "$pkgdir/usr/share/applications/"
+  install -Dm644 omaforge/ui/icons/omaforge.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/omaforge.svg"
+  install -Dm644 packaging/omaforge-update.service packaging/omaforge-update.timer -t "$pkgdir/usr/lib/systemd/user/"
+  install -Dm644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+}

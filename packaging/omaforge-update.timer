@@ -1,0 +1,10 @@
+[Unit]
+Description=Update World of Warcraft addons daily (omaforge)
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target
