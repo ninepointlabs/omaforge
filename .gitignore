@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+/build/
+/dist/
+*.egg-info/
+packaging/*.pkg.tar.*
+packaging/src/
+packaging/pkg/

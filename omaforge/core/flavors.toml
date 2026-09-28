@@ -1,0 +1,219 @@
+# How omaforge turns a client folder into a game.
+#
+# A client folder (`_retail_`, `_classic_beta_`, ...) carries a Blizzard
+# product id in `.flavor.info`, and `.build.info` in the install root gives
+# that product's version. Rules below are tried in order; the first rule whose
+# `products` and `version` both match wins. `products = ["*"]` matches any.
+#
+# To teach omaforge about a new branch without a code change, copy a rule and
+# a game into ~/.config/omaforge/flavors.toml. User rules are tried first and
+# user games replace built-in games with the same id.
+#
+# `verified = false` marks values that were guessed rather than observed.
+
+# --- Games -----------------------------------------------------------------
+# toc_suffixes    TOC file suffixes the client reads, most specific first
+#                 (Addon_Mainline.toc / Addon-Mainline.toc). Addon.toc is
+#                 always the last resort.
+# release_flavors BigWigs packager `release.json` flavors to install from.
+# release_fallback Flavors to fall back to when a release has none of the
+#                 above. Installs from a fallback are flagged as unverified.
+# wowi_majors     Major game versions WoWInterface lists as compatible.
+# curseforge_version_type  CurseForge gameVersionTypeId, for when the
+#                 CurseForge provider is enabled.
+
+[[game]]
+id = "retail"
+label = "Retail"
+toc_suffixes = ["Mainline", "Standard"]
+release_flavors = ["mainline", "retail"]
+wowi_majors = [10, 11, 12, 13, 14]
+curseforge_version_type = 517
+verified = true
+
+[[game]]
+id = "classic_era"
+label = "Classic Era"
+toc_suffixes = ["Vanilla", "Classic"]
+release_flavors = ["classic", "vanilla"]
+wowi_majors = [1]
+curseforge_version_type = 67408
+verified = true
+
+[[game]]
+id = "tbc"
+label = "Burning Crusade Classic"
+toc_suffixes = ["TBC", "BCC", "Classic"]
+release_flavors = ["bcc", "tbc"]
+wowi_majors = [2]
+curseforge_version_type = 73246
+verified = true
+
+[[game]]
+id = "wrath"
+label = "Wrath Classic"
+toc_suffixes = ["Wrath", "WOTLKC", "Classic"]
+release_flavors = ["wrath"]
+wowi_majors = [3]
+curseforge_version_type = 73713
+verified = true
+
+[[game]]
+id = "cata"
+label = "Cataclysm Classic"
+toc_suffixes = ["Cata", "Classic"]
+release_flavors = ["cata"]
+wowi_majors = [4]
+curseforge_version_type = 77522
+verified = true
+
+[[game]]
+id = "mists"
+label = "Mists of Pandaria Classic"
+toc_suffixes = ["Mists", "Classic"]
+release_flavors = ["mists"]
+wowi_majors = [5]
+curseforge_version_type = 79434
+verified = true
+
+[[game]]
+# World of Warcraft: Forever. The beta client was observed as product
+# `wow_classic_beta`, folder `_classic_beta_`, version 1.60.1.70009
+# (interface 16001). The BigWigs packager (release.sh) names the TOC suffix
+# `_Camelot` (Forever's codename), the release.json flavor `forever` (alias
+# `camelot`) and the CurseForge game version type 88568. Whether the client
+# also reads `_Classic` TOCs is a guess.
+id = "forever"
+label = "Forever"
+toc_suffixes = ["Camelot", "Classic"]
+release_flavors = ["forever", "camelot"]
+wowi_majors = [1]
+curseforge_version_type = 88568
+verified = true
+
+[[game]]
+# Titan Reforged (China). Listed by the packager as flavor `titan`,
+# interface 380xx. Not observed on a real client.
+id = "titan"
+label = "Titan Reforged"
+toc_suffixes = ["Wrath", "Classic"]
+release_flavors = ["titan"]
+wowi_majors = [3]
+curseforge_version_type = 81212
+verified = false
+
+# --- Rules -----------------------------------------------------------------
+# channel: live, ptr, xptr, beta. `version` is a list of comparisons that
+# must all hold against the client's version from .build.info.
+
+# Forever first: its beta shares the generic classic beta product id.
+[[rule]]
+products = ["wow_classic_beta", "wow_classic_ptr", "wow_classic_era_beta", "wow_classic_era_ptr"]
+version = [">=1.60", "<2"]
+game = "forever"
+channel = "beta"
+verified = true
+
+[[rule]]
+# Guess: the live Forever client's product id is not known yet. Any live
+# client in the 1.60+ range is treated as Forever.
+products = ["*"]
+version = [">=1.60", "<2"]
+game = "forever"
+channel = "live"
+verified = false
+
+[[rule]]
+products = ["wow"]
+game = "retail"
+channel = "live"
+
+[[rule]]
+products = ["wowt"]
+game = "retail"
+channel = "ptr"
+
+[[rule]]
+products = ["wowxptr"]
+game = "retail"
+channel = "xptr"
+
+[[rule]]
+products = ["wow_beta"]
+game = "retail"
+channel = "beta"
+
+[[rule]]
+products = ["wow_classic_era"]
+game = "classic_era"
+channel = "live"
+
+[[rule]]
+products = ["wow_classic_era_ptr"]
+game = "classic_era"
+channel = "ptr"
+
+[[rule]]
+products = ["wow_classic_era_beta"]
+game = "classic_era"
+channel = "beta"
+
+[[rule]]
+# Anniversary realms. The product id is from community reports, not observed.
+products = ["wow_anniversary"]
+version = [">=2", "<3"]
+game = "tbc"
+channel = "live"
+verified = false
+
+[[rule]]
+products = ["wow_anniversary"]
+version = ["<2"]
+game = "classic_era"
+channel = "live"
+verified = false
+
+[[rule]]
+products = ["*"]
+version = [">=3.80", "<3.81"]
+game = "titan"
+verified = false
+
+# Progression Classic and its test clients: the game follows the version.
+[[rule]]
+products = ["wow_classic", "wow_classic_ptr", "wow_classic_beta", "wow_anniversary_ptr", "wow_anniversary_beta"]
+version = ["<2"]
+game = "classic_era"
+
+[[rule]]
+products = ["wow_classic", "wow_classic_ptr", "wow_classic_beta", "wow_anniversary_ptr", "wow_anniversary_beta"]
+version = [">=2", "<3"]
+game = "tbc"
+
+[[rule]]
+products = ["wow_classic", "wow_classic_ptr", "wow_classic_beta"]
+version = [">=3", "<4"]
+game = "wrath"
+
+[[rule]]
+products = ["wow_classic", "wow_classic_ptr", "wow_classic_beta"]
+version = [">=4", "<5"]
+game = "cata"
+
+[[rule]]
+products = ["wow_classic", "wow_classic_ptr", "wow_classic_beta"]
+version = [">=5", "<6"]
+game = "mists"
+
+# Last resort for unknown products: the version decides.
+[[rule]]
+products = ["*"]
+version = [">=6"]
+game = "retail"
+verified = false
+
+[[rule]]
+products = ["*"]
+version = ["<2"]
+game = "classic_era"
+verified = false
