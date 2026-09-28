@@ -17,6 +17,7 @@ from pathlib import Path
 from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 
 from omaforge import __version__, config as configmod
+from omaforge.buildkey import builtin_curseforge_key
 from omaforge.core.manager import Manager
 
 
@@ -140,6 +141,7 @@ class Backend(QObject):
             "autodetect": cfg["roots"]["autodetect"],
             "githubToken": cfg["providers"]["github"]["token"],
             "curseforgeKey": cfg["providers"]["curseforge"]["api_key"],
+            "curseforgeBuiltin": bool(builtin_curseforge_key()),
             "wagoKey": cfg["providers"]["wago"]["api_key"],
             "backupsKeep": cfg["backups"]["keep"],
             "backupBeforeUpdate": cfg["backups"]["before_bulk_update"],

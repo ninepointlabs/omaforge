@@ -30,6 +30,9 @@ sha256sums=('SKIP')
 
 build() {
   cd "$pkgname-$pkgver"
+  # Release builds set OMAFORGE_CURSEFORGE_BUILD_KEY to embed omaforge's
+  # CurseForge key (obfuscated). Without it, users add their own key.
+  python -m omaforge.buildkey write
   python -m build --wheel --no-isolation
 }
 

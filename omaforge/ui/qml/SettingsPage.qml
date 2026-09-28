@@ -87,7 +87,7 @@ ScrollView {
             rowSpacing: 8
             Layout.fillWidth: true
             Label2 { text: "CurseForge API key" }
-            Field { id: cfKey; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: "Issued to omaforge by CurseForge" }
+            Field { id: cfKey; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: page.s.curseforgeBuiltin ? "Using the key built into omaforge; paste your own to override" : "Issued by CurseForge for third-party apps" }
             Label2 { text: "GitHub token" }
             Field { id: ghToken; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: "Optional: raises the rate limit from 60 to 5,000 requests an hour" }
             Label2 { text: "Wago API key" }

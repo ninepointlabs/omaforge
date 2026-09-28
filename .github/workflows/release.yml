@@ -1,0 +1,44 @@
+name: Release
+
+# Push a tag like v0.1.0 to build the Arch/Omarchy package and publish it.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install build dependencies
+        run: |
+          pacman -Syu --noconfirm --needed base-devel git github-cli python pyside6 qt6-declarative qt6-svg \
+            python-build python-installer python-setuptools python-wheel python-pytest xdg-utils hicolor-icon-theme
+      - uses: actions/checkout@v4
+      - name: Build package
+        env:
+          # Embedded (obfuscated) in the release package only; never committed.
+          OMAFORGE_CURSEFORGE_BUILD_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          version="${GITHUB_REF_NAME#v}"
+          grep -q "^pkgver=$version$" packaging/PKGBUILD || { echo "PKGBUILD pkgver does not match tag $GITHUB_REF_NAME"; exit 1; }
+          git archive --prefix="omaforge-$version/" -o "packaging/omaforge-$version.tar.gz" HEAD
+          useradd -m builder
+          chown -R builder packaging
+          cd packaging
+          su builder -c "OMAFORGE_CURSEFORGE_BUILD_KEY='$OMAFORGE_CURSEFORGE_BUILD_KEY' makepkg -f --noconfirm --skipchecksums"
+          pkg=$(ls omaforge-*.pkg.tar.zst)
+          bsdtar -tf "$pkg" | grep -q _buildkey.py && echo "CurseForge key embedded" || echo "::warning::built without a CurseForge key"
+          sha256sum "$pkg" > "$pkg.sha256"
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd packaging
+          gh release create "$GITHUB_REF_NAME" omaforge-*.pkg.tar.zst omaforge-*.pkg.tar.zst.sha256 \
+            --repo "$GITHUB_REPOSITORY" --title "omaforge $GITHUB_REF_NAME" --generate-notes \
+            --notes "Install on Arch or Omarchy: \`sudo pacman -U omaforge-${GITHUB_REF_NAME#v}-1-any.pkg.tar.zst\`, then \`omaforge setup omarchy\`."

@@ -11,9 +11,15 @@ PROVIDERS = (CurseForge, WoWInterface, GitHub, Wago)
 
 
 def build(http: Http, config: dict) -> dict[str, Provider]:
+    from omaforge.buildkey import builtin_curseforge_key
+
     out = {}
     for cls in PROVIDERS:
         pcfg = config.get("providers", {}).get(cls.name, {})
+        if cls.name == "curseforge" and not pcfg.get("api_key"):
+            builtin = builtin_curseforge_key()
+            if builtin:
+                pcfg = {**pcfg, "api_key": builtin, "builtin": True}
         if pcfg.get("enabled", True):
             out[cls.name] = cls(http, pcfg)
     return out

@@ -59,24 +59,38 @@ in `~/.config/omaforge/flavors.toml`; they are tried before the built-in ones.
 
 ## Install
 
+On Arch or Omarchy, download the package from the
+[latest release](https://github.com/ninepointlabs/omaforge/releases/latest) and:
+
 ```sh
-cd packaging && makepkg -si
-omaforge setup omarchy                          # "WoW Addons" in the Omarchy menu
+sudo pacman -U omaforge-*-any.pkg.tar.zst
+omaforge setup omarchy                                 # "WoW Addons" in the Omarchy menu
 omaforge setup omarchy --keybind "SUPER + SHIFT + Z"   # optional keybinding
 ```
 
-The launcher entry comes from the desktop file, so omaforge also shows up in
-the app launcher. `omaforge setup omarchy --remove` undoes the menu entry and
-keybinding. Both are kept between marker comments in
-`~/.config/omarchy/extensions/omarchy-menu.jsonc` and `~/.config/hypr/bindings.lua`,
-with a backup written first.
-
-Add your CurseForge key under **Settings** or in `~/.config/omaforge/config.toml`:
+Release packages include omaforge's CurseForge API key, so CurseForge works out
+of the box. Building from source (`cd packaging && makepkg -si`) gives a
+package without it; add your own key under **Settings** or in
+`~/.config/omaforge/config.toml`:
 
 ```toml
 [providers.curseforge]
 api_key = "..."
 ```
+
+The launcher entry comes from the desktop file. `omaforge setup omarchy --remove`
+undoes the menu entry and keybinding, which live between marker comments in
+`~/.config/omarchy/extensions/omarchy-menu.jsonc` and `~/.config/hypr/bindings.lua`
+(a backup is written first).
+
+## Releasing
+
+Bump `pkgver` in `packaging/PKGBUILD` and `version` in `pyproject.toml` /
+`omaforge/__init__.py`, then push a `v<version>` tag. The Release workflow
+builds the package in an Arch container, embeds the CurseForge key from the
+`CURSEFORGE_API_KEY` repository secret (obfuscated; see
+`omaforge/buildkey.py`), runs the tests and attaches the package to a GitHub
+release. The key is never committed.
 
 ## Command line
 

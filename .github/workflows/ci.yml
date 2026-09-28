@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: pacman -Syu --noconfirm --needed git python pyside6 qt6-declarative qt6-svg python-pytest
+      - uses: actions/checkout@v4
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          python -m pytest -q

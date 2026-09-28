@@ -257,7 +257,8 @@ def cmd_roots(m: Manager, args) -> int:
 
 
 def cmd_providers(m: Manager, args) -> int:
-    rows = [[p.name, p.label, "yes" if p.available else "no", p.unavailable_reason] for p in m.providers.values()]
+    rows = [[p.name, p.label, "yes" if p.available else "no",
+             p.unavailable_reason or ("built-in key" if p.config.get("builtin") else "")] for p in m.providers.values()]
     _out(args, [{"name": r[0], "available": r[2] == "yes", "reason": r[3]} for r in rows],
          _table(rows, ["NAME", "PROVIDER", "AVAILABLE", "NOTE"]))
     return 0
