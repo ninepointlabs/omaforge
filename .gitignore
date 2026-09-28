@@ -8,3 +8,4 @@ __pycache__/
 packaging/*.pkg.tar.*
 packaging/src/
 packaging/pkg/
+packaging/*.tar.gz
