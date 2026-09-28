@@ -30,7 +30,8 @@ jobs:
           useradd -m builder
           chown -R builder packaging
           cd packaging
-          su builder -c "OMAFORGE_CURSEFORGE_BUILD_KEY='$OMAFORGE_CURSEFORGE_BUILD_KEY' makepkg -f --noconfirm --skipchecksums"
+          # -w passes the key through untouched (it contains `$`, so never interpolate it into a command).
+          su builder -w OMAFORGE_CURSEFORGE_BUILD_KEY -c "makepkg -f --noconfirm --skipchecksums"
           pkg=$(ls omaforge-*.pkg.tar.zst)
           bsdtar -tf "$pkg" | grep -q _buildkey.py && echo "CurseForge key embedded" || echo "::warning::built without a CurseForge key"
           sha256sum "$pkg" > "$pkg.sha256"
