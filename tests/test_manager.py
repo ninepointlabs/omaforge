@@ -179,3 +179,26 @@ def test_roots_add_persists(tmp_path, wow_root):
     assert config.load()["roots"]["paths"] == [str(wow_root.resolve())]
     with pytest.raises(ManagerError):
         m.roots_add(str(tmp_path))
+
+
+def test_blocked_curseforge_addon_installs_from_github(world, monkeypatch):
+    from omaforge.core.providers.base import DistributionDisabled
+    from omaforge.core.providers.curseforge import CurseForge
+
+    world.publish("v1", ["Foo"])
+    cf = CurseForge(world.http, {"api_key": "k"})
+    monkeypatch.setattr(cf, "resolve", lambda *a, **k: (_ for _ in ()).throw(DistributionDisabled("blocked")))
+    monkeypatch.setattr(cf, "alternates", lambda addon_id, ctx: ("o/Foo", ["Foo"]))
+    world.m.providers["curseforge"] = cf
+    rec = world.m.install(world.retail, "curseforge", "3358")
+    assert (rec["provider"], rec["id"]) == ("github", "o/Foo") and "disabled" in rec["via"]
+
+    monkeypatch.setattr(cf, "alternates", lambda addon_id, ctx: (None, ["Nothing"]))
+    with pytest.raises(ManagerError, match="curseforge.com"):
+        world.m.install(world.retail, "curseforge", "3358")
+
+
+def test_explore_requires_ranking_provider(world):
+    with pytest.raises(ManagerError):
+        world.m.explore(world.retail, "github")
+    assert [s["name"] for s in world.m.explore_sources()] == ["wowinterface"]

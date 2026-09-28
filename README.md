@@ -21,6 +21,11 @@ follows your Omarchy theme and has a CLI for timers and keybindings.
   with atomic renames; a failure rolls back. Folders an update no longer
   ships are removed. `WTF` is backed up before every bulk update, and backups
   can be restored.
+- **Finds the good stuff.** Explore ranks the top addons for the selected
+  game by popularity, downloads or recent updates, from CurseForge (with its
+  categories) or WoWInterface (monthly downloads, favorites). Search results
+  show the same numbers and sort by them. Neither site publishes ratings;
+  CurseForge's popularity rank and WoWInterface favorites are the closest.
 - **Per-addon control.** Pin a version, ignore an addon, or follow its
   stable, beta or alpha channel.
 - **Moves with you.** Export a client's addon list to JSON and import it on
@@ -30,7 +35,7 @@ follows your Omarchy theme and has a CLI for timers and keybindings.
 
 | Source | Needs | Notes |
 |---|---|---|
-| CurseForge | API key issued to omaforge | Search, install, update, fingerprint matching. Authors can opt out of third-party downloads; omaforge then says so and points to curseforge.com. |
+| CurseForge | API key issued to omaforge | Search, top lists, install, update, fingerprint matching. About half of the most popular addons have third-party downloads turned off by their authors; omaforge then installs the same addon from its GitHub releases or WoWInterface when one exists, and otherwise points to curseforge.com. |
 | WoWInterface | nothing | Public MMOUI API. One release per addon (stable). |
 | GitHub | nothing (token optional) | Releases built with the BigWigs packager; `release.json` picks the right zip per flavor. A token raises the rate limit from 60 to 5,000 requests an hour. |
 | Wago Addons | API key | Stubbed until access is granted. |
@@ -98,7 +103,10 @@ release. The key is never committed.
 omaforge                      # open the app
 omaforge clients              # detected clients
 omaforge list --check -c forever
-omaforge search bigwigs -c retail
+omaforge search bigwigs -c retail --sort downloads
+omaforge explore -c forever                     # top 25 by CurseForge popularity
+omaforge explore -p wowi --sort favorites -n 50
+omaforge explore --categories                   # then --category <id>
 omaforge install curseforge:2382 github:DeadlyBossMods/DeadlyBossMods wowi:11190
 omaforge update --all --notify   # every client; WTF backed up first
 omaforge pin|unpin|ignore|unignore <addon>

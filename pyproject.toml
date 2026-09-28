@@ -1,6 +1,6 @@
 [project]
 name = "omaforge"
-version = "0.1.0"
+version = "0.2.0"
 description = "World of Warcraft addon manager for Omarchy"
 requires-python = ">=3.14"
 license = "MIT"

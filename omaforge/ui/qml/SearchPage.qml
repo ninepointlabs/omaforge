@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
+import "Format.js" as Fmt
 
 ColumnLayout {
     id: page
@@ -18,11 +19,6 @@ ColumnLayout {
         if (!query.text.trim() || chosen.length === 0) return
         page.lastQuery = query.text.trim()
         backend.search(query.text, chosen)
-    }
-    function fmt(n) {
-        if (n >= 1e6) return (n / 1e6).toFixed(1) + "M"
-        if (n >= 1e3) return (n / 1e3).toFixed(0) + "k"
-        return "" + n
     }
 
     RowLayout {
@@ -52,6 +48,14 @@ ColumnLayout {
                 ToolTip.delay: 600
                 ToolTip.text: active ? "Searching " + modelData.label + "; click to skip it" : "Click to search " + modelData.label
             }
+        }
+        Choice {
+            id: sortBox
+            implicitWidth: 170
+            model: Object.keys(Fmt.sorters)
+            ToolTip.visible: hovered
+            ToolTip.delay: 600
+            ToolTip.text: "Sort results"
         }
         Btn { text: "Search"; primary: true; enabled: !backend.busy && query.text.trim() !== ""; onClicked: page.run() }
     }
@@ -86,63 +90,14 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         clip: true
-        model: backend.searchResults
+        model: {
+            var results = backend.searchResults.slice()
+            var by = Fmt.sorters[sortBox.currentText]
+            return by ? results.sort(by) : results
+        }
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
-
-        delegate: Rectangle {
-            id: row
-            required property var modelData
-            readonly property var r: modelData
-            width: list.width
-            height: 66
-            color: hover.hovered ? theme.surface : "transparent"
-            HoverHandler { id: hover }
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border; opacity: 0.5 }
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 16
-                anchors.rightMargin: 16
-                spacing: 12
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 3
-                    RowLayout {
-                        spacing: 8
-                        Layout.fillWidth: true
-                        Label2 { text: row.r.name; font.pixelSize: 14; Layout.maximumWidth: row.width * 0.5 }
-                        Label2 { text: row.r.author ? "by " + row.r.author : ""; dim: true; font.pixelSize: 12; Layout.fillWidth: true }
-                    }
-                    Label2 {
-                        Layout.fillWidth: true
-                        dim: true
-                        font.pixelSize: 11
-                        text: [row.r.provider, row.r.version, row.r.downloads ? page.fmt(row.r.downloads) + (row.r.provider === "github" ? " stars" : " downloads") : "",
-                               row.r.compatible ? "" : "no build listed for this client"].filter(function (s) { return s }).join(" · ")
-                              + (row.r.summary ? "  —  " + row.r.summary : "")
-                    }
-                }
-                Btn {
-                    text: "Page"
-                    subtle: true
-                    visible: !!row.r.url
-                    onClicked: backend.openUrl(row.r.url)
-                }
-                Choice {
-                    id: channel
-                    model: ["stable", "beta", "alpha"]
-                    visible: !row.r.installed
-                }
-                Btn {
-                    Layout.preferredWidth: 100
-                    text: row.r.installed ? "Installed" : "Install"
-                    primary: !row.r.installed
-                    enabled: !row.r.installed && !backend.busy
-                    onClicked: backend.install(row.r.provider, row.r.id, channel.currentText)
-                }
-            }
-        }
+        delegate: AddonRow { width: list.width }
 
         Label2 {
             anchors.centerIn: parent
@@ -150,7 +105,7 @@ ColumnLayout {
             dim: true
             horizontalAlignment: Text.AlignHCenter
             text: page.lastQuery ? "Nothing found for \"" + page.lastQuery + "\" on " + (backend.client.label || "this client")
-                                 : "Search " + page.usable.map(function (p) { return p.label }).join(", ") + ".\nResults only show addons with a build for " + (backend.client.label || "this client") + "."
+                                 : "Search " + page.usable.map(function (p) { return p.label }).join(", ") + ".\nResults only show addons with a build for " + (backend.client.label || "this client") + ".\nFor the most popular addons, see Explore."
         }
     }
 }

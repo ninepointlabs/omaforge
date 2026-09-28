@@ -9,8 +9,15 @@ from omaforge.core.http import Http
 from omaforge.core.models import Folder, Release, RemoteAddon
 
 
+EXPLORE_SORTS = ("popular", "downloads", "updated", "favorites", "name")
+
+
 class ProviderError(Exception):
     pass
+
+
+class DistributionDisabled(ProviderError):
+    """The author does not allow downloads in third-party apps."""
 
 
 class ProviderUnavailable(ProviderError):
@@ -76,6 +83,17 @@ class Provider(ABC):
             if channel_allows(channel, release.channel):
                 return release
         return None
+
+    # Explore: ranked lists of the top addons for a game.
+    explore_sorts: tuple[str, ...] = ()  # subset of EXPLORE_SORTS this provider can rank by
+
+    def categories(self, ctx: GameContext) -> list[dict]:
+        """[{"id", "name"}] usable as a `category` filter in top(); empty if unsupported."""
+        return []
+
+    def top(self, ctx: GameContext, sort: str = "popular", category: str | None = None,
+            offset: int = 0, limit: int = 50) -> list[RemoteAddon]:
+        raise ProviderError(f"{self.label} has no ranked addon lists")
 
     def download_headers(self, release: Release) -> dict[str, str]:
         return {}

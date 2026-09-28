@@ -23,6 +23,12 @@ class RemoteAddon:
     updated: int = 0  # unix seconds
     folders: list[str] = field(default_factory=list)
     compatible: bool = True
+    downloads_monthly: int = 0  # WoWInterface only
+    favorites: int = 0  # WoWInterface favorites, GitHub stars
+    rank: int = 0  # CurseForge game popularity rank (1 = most popular)
+    icon: str = ""
+    categories: list[str] = field(default_factory=list)
+    external_only: bool = False  # author disabled downloads in third-party apps
 
     def to_dict(self) -> dict:
         return asdict(self)

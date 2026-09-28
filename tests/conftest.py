@@ -64,6 +64,7 @@ class FakeHttp:
         self.posts: dict = {}
         self.files = files or {}
         self.offline = False
+        self.status = 404  # returned for unknown URLs
         self.requests: list[str] = []
 
     def get_json(self, url, headers=None, ttl=0):
@@ -71,7 +72,7 @@ class FakeHttp:
         if url not in self.responses:
             from omaforge.core.http import HttpError
 
-            raise HttpError(f"{url}: HTTP 404", 404)
+            raise HttpError(f"{url}: HTTP {self.status}", self.status)
         return self.responses[url]
 
     def post_json(self, url, payload, headers=None, ttl=0):

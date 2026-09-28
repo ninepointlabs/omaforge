@@ -59,7 +59,7 @@ class GitHub(Provider):
             author=r["owner"]["login"],
             summary=r.get("description") or "",
             url=r["html_url"],
-            downloads=int(r.get("stargazers_count") or 0),
+            favorites=int(r.get("stargazers_count") or 0),
             version=latest.version if latest else "",
             updated=latest.date if latest else _ts(r.get("pushed_at")),
             compatible=latest is not None,
@@ -84,7 +84,7 @@ class GitHub(Provider):
                     author=r["owner"]["login"],
                     summary=r.get("description") or "",
                     url=r["html_url"],
-                    downloads=int(r.get("stargazers_count") or 0),
+                    favorites=int(r.get("stargazers_count") or 0),
                     updated=_ts(r.get("pushed_at")),
                 )
             )

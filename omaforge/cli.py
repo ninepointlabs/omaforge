@@ -154,15 +154,68 @@ def cmd_update(m: Manager, args) -> int:
     return rc
 
 
+def _count(n: int) -> str:
+    if not n:
+        return ""
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.0f}k"
+    return str(n)
+
+
+def _age(ts: int) -> str:
+    if not ts:
+        return ""
+    days = int((time.time() - ts) // 86400)
+    return "today" if days < 1 else f"{days}d ago" if days < 60 else f"{days // 30}mo ago" if days < 730 else f"{days // 365}y ago"
+
+
+SEARCH_SORTS = {
+    "relevance": None,
+    "downloads": lambda r: -r.downloads,
+    "popular": lambda r: (r.rank or 10**9, -r.downloads_monthly),
+    "favorites": lambda r: -r.favorites,
+    "updated": lambda r: -r.updated,
+    "name": lambda r: r.name.lower(),
+}
+
+
+def _addon_rows(results, numbered=False, offset=0):
+    rows = []
+    for i, r in enumerate(results, offset + 1):
+        row = [f"{r.provider}:{r.id}", r.name, _count(r.downloads), _count(r.downloads_monthly),
+               _count(r.favorites), _age(r.updated), r.author]
+        rows.append([str(i)] + row if numbered else row)
+    header = ["SOURCE", "NAME", "DOWNLOADS", "MONTH", "FAVS/STARS", "UPDATED", "AUTHOR"]
+    return rows, (["#"] + header if numbered else header)
+
+
 def cmd_search(m: Manager, args) -> int:
     client = m.client(args.client)
     providers = [PROVIDER_ALIASES.get(p, p) for p in args.provider] if args.provider else None
     results, errors = m.search(client, " ".join(args.query), providers)
-    rows = [[f"{r.provider}:{r.id}", r.name, r.author, r.version, str(r.downloads)] for r in results[: args.limit]]
-    text = _table(rows, ["SOURCE", "NAME", "AUTHOR", "VERSION", "DOWNLOADS"]) if rows else "no results"
+    if SEARCH_SORTS[args.sort]:
+        results.sort(key=SEARCH_SORTS[args.sort])
+    rows, header = _addon_rows(results[: args.limit])
+    text = _table(rows, header) if rows else "no results"
     for p, e in errors.items():
         text += f"\n{p}: {e}"
     _out(args, {"results": [r.to_dict() for r in results], "errors": errors}, text)
+    return 0
+
+
+def cmd_explore(m: Manager, args) -> int:
+    client = m.client(args.client)
+    if args.categories:
+        cats = m.categories(client, PROVIDER_ALIASES.get(args.provider, args.provider))
+        _out(args, cats, "\n".join(f"{c['id']:>6}  {c['name']}" for c in cats) or "no categories")
+        return 0
+    results = m.explore(client, PROVIDER_ALIASES.get(args.provider, args.provider), args.sort, args.category,
+                        args.offset, args.limit)
+    rows, header = _addon_rows(results, numbered=True, offset=args.offset)
+    _out(args, [r.to_dict() for r in results],
+         f"Top {client.label} addons on {args.provider} by {args.sort}\n\n" + (_table(rows, header) if rows else "none"))
     return 0
 
 
@@ -174,6 +227,7 @@ def cmd_install(m: Manager, args) -> int:
         try:
             rec = m.install(client, provider, addon_id, args.channel, args.force)
             warn = " (flavor not verified for this client)" if rec["compat"] != "ok" else ""
+            warn += f" from {rec['via']}" if rec.get("via") else ""
             _out(args, rec, f"installed {rec['name']} {rec['version']} into {client.label}: {', '.join(rec['folders'])}{warn}")
         except (ManagerError, ProviderError, HttpError, InstallError) as e:
             print(f"{ref}: {e}", file=sys.stderr)
@@ -312,7 +366,16 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("query", nargs="+")
     s.add_argument("-p", "--provider", action="append", help="limit to a provider (repeatable)")
     s.add_argument("-n", "--limit", type=int, default=25)
+    s.add_argument("-s", "--sort", choices=tuple(SEARCH_SORTS), default="relevance")
     s.set_defaults(fn=cmd_search)
+    s = sub.add_parser("explore", parents=[common], help="top addons for a game")
+    s.add_argument("-p", "--provider", default="curseforge", help="curseforge (default) or wowinterface")
+    s.add_argument("-s", "--sort", choices=("popular", "downloads", "updated", "favorites", "name"), default="popular")
+    s.add_argument("--category", help="category id (see --categories)")
+    s.add_argument("--categories", action="store_true", help="list the provider's categories")
+    s.add_argument("-n", "--limit", type=int, default=25)
+    s.add_argument("--offset", type=int, default=0)
+    s.set_defaults(fn=cmd_explore)
     s = sub.add_parser("install", parents=[common], help="install addons (provider:id)")
     s.add_argument("addons", nargs="+")
     s.add_argument("--channel", choices=CHANNELS)

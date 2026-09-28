@@ -7,15 +7,20 @@ not install.
 """
 
 import calendar
+import re
 import time
 import urllib.parse
 
 from omaforge.core.models import Folder, Release, RemoteAddon
-from omaforge.core.providers.base import GameContext, Match, Provider, ProviderError
+from omaforge.core.http import HttpError
+from omaforge.core.providers.base import DistributionDisabled, GameContext, Match, Provider, ProviderError
 from omaforge.core.providers.fingerprint import folder_fingerprint
 
 API = "https://api.curseforge.com/v1"
 WOW_GAME_ID = 1
+ADDONS_CLASS_ID = 1
+# CurseForge ModsSearchSortField values.
+SORT_FIELDS = {"popular": 2, "updated": 3, "name": 4, "downloads": 6}
 RELEASE_TYPES = {1: "stable", 2: "beta", 3: "alpha"}
 
 
@@ -64,6 +69,10 @@ class CurseForge(Provider):
             version=next((i["filename"].removesuffix(".zip") for i in idx if i.get("releaseType") == 1), ""),
             updated=_ts(m.get("dateReleased")),
             compatible=bool(idx),
+            rank=int(m.get("gamePopularityRank") or 0),
+            icon=(m.get("logo") or {}).get("thumbnailUrl") or "",
+            categories=[c["name"] for c in m.get("categories", [])],
+            external_only=m.get("allowModDistribution") is False,
         )
 
     def search(self, query: str, ctx: GameContext, limit: int = 50) -> list[RemoteAddon]:
@@ -76,6 +85,29 @@ class CurseForge(Provider):
             "pageSize": min(limit, 50),
         })
         return [self._remote(m, ctx) for m in self._get(f"/mods/search?{q}", ttl=1800)]
+
+    explore_sorts = ("popular", "downloads", "updated", "name")
+
+    def categories(self, ctx: GameContext) -> list[dict]:
+        data = self._get(f"/categories?gameId={WOW_GAME_ID}&classId={ADDONS_CLASS_ID}", ttl=7 * 86400)
+        top = [c for c in data if c.get("parentCategoryId") == ADDONS_CLASS_ID and not c.get("isClass")]
+        return sorted(({"id": str(c["id"]), "name": c["name"]} for c in top), key=lambda c: c["name"])
+
+    def top(self, ctx: GameContext, sort: str = "popular", category: str | None = None,
+            offset: int = 0, limit: int = 50) -> list[RemoteAddon]:
+        params = {
+            "gameId": WOW_GAME_ID,
+            "classId": ADDONS_CLASS_ID,
+            "gameVersionTypeId": self._version_type(ctx),
+            "sortField": SORT_FIELDS.get(sort, 2),
+            "sortOrder": "asc" if sort == "name" else "desc",
+            "index": offset,
+            "pageSize": min(limit, 50),
+        }
+        if category:
+            params["categoryId"] = int(category)
+        data = self._get(f"/mods/search?{urllib.parse.urlencode(params)}", ttl=3600)
+        return [self._remote(m, ctx) for m in data]
 
     def get_addon(self, addon_id: str, ctx: GameContext) -> RemoteAddon:
         return self._remote(self._get(f"/mods/{int(addon_id)}", ttl=3600), ctx)
@@ -106,15 +138,31 @@ class CurseForge(Provider):
         release = super().resolve(addon_id, ctx, channel)
         if release and not release.download_url:
             # Authors can opt out of third-party distribution; the API then
-            # returns no URL and the file must be fetched from curseforge.com.
-            url = self._get(f"/mods/{int(addon_id)}/files/{release.extra["file_id"]}/download-url", ttl=3600)
+            # gives no URL (403 on download-url) and the file is only on curseforge.com.
+            try:
+                url = self._get(f"/mods/{int(addon_id)}/files/{release.extra['file_id']}/download-url", ttl=3600)
+            except HttpError as e:
+                if e.status not in (403, 404):
+                    raise
+                url = None
             if not url:
-                raise ProviderError(
-                    f"CurseForge: the author of {addon_id} does not allow downloads in third-party apps; "
-                    "install it from curseforge.com"
+                raise DistributionDisabled(
+                    f"the author of CurseForge addon {addon_id} does not allow downloads in other apps"
                 )
             release.download_url = url
         return release
+
+    def alternates(self, addon_id: str, ctx: GameContext) -> tuple[str | None, list[str]]:
+        """(GitHub repo from the project's source link, addon folders of its latest file for this game)."""
+        m = self._get(f"/mods/{int(addon_id)}", ttl=3600)
+        source = (m.get("links") or {}).get("sourceUrl") or ""
+        match = re.match(r"https?://github\.com/([^/\s]+)/([^/\s#?]+)", source)
+        repo = f"{match.group(1)}/{match.group(2).removesuffix('.git')}" if match else None
+        vt = ctx.game.curseforge_version_type
+        files = sorted(m.get("latestFiles", []),
+                       key=lambda f: vt not in [g.get("gameVersionTypeId") for g in f.get("sortableGameVersions", [])])
+        folders = [mod["name"] for mod in (files[0].get("modules", []) if files else [])]
+        return repo, folders
 
     def match_installed(self, groups, folders: dict[str, Folder], ctx: GameContext) -> list[Match]:
         addons_dir = ctx.addons_dir

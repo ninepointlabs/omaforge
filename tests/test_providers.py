@@ -61,6 +61,20 @@ def test_wowi_versions():
     assert p.versions("11190", ctx("classic_era", (1, 15, 8))) == []
 
 
+def test_wowi_top_needs_listed_compat_and_sorts():
+    p = wowi()
+    assert [r.id for r in p.top(ctx(), "downloads")] == ["11190", "5086"]  # Ace3/LibStub list no compat
+    assert {r.id for r in p.top(ctx("classic_era", (1, 15, 8)), "favorites")} == {"5086", "99"}
+    assert [r.id for r in p.top(ctx(), "name")] == ["11190", "5086"]
+    assert p.top(ctx(), "downloads", offset=1, limit=1)[0].id == "5086"
+
+
+def test_wowi_find_by_folders():
+    p = wowi()
+    assert p.find_by_folders(["BigWigs", "BigWigs_Core"], ctx()) == "5086"
+    assert p.find_by_folders(["Nope"], ctx()) is None
+
+
 def test_wowi_error_response():
     p = wowi({"1": {"ERROR": "No AddOn found."}})
     with pytest.raises(ProviderError, match="No AddOn found"):
@@ -193,12 +207,45 @@ def test_curseforge_forever_uses_its_version_type():
 
 
 def test_curseforge_distribution_disabled():
+    from omaforge.core.providers.base import DistributionDisabled
+
     http = FakeHttp({
         f"{CF}/mods/61284/files?gameVersionTypeId=517&pageSize=50": {"data": [cf_file(9, "Details", url=None)]},
         f"{CF}/mods/61284/files/9/download-url": {"data": None},
     })
-    with pytest.raises(ProviderError, match="third-party"):
+    with pytest.raises(DistributionDisabled):
         CurseForge(http, {"api_key": "k"}).resolve("61284", ctx())
+    # The real API answers 403 rather than an empty URL.
+    del http.responses[f"{CF}/mods/61284/files/9/download-url"]
+    http.status = 403
+    with pytest.raises(DistributionDisabled):
+        CurseForge(http, {"api_key": "k"}).resolve("61284", ctx())
+
+
+def test_curseforge_top_and_categories():
+    mod = {"id": 3358, "name": "DBM", "downloadCount": 634, "gamePopularityRank": 1, "allowModDistribution": False,
+           "logo": {"thumbnailUrl": "https://img/dbm.png"}, "categories": [{"name": "Boss Encounters"}],
+           "authors": [{"name": "MysticalOS"}], "latestFilesIndexes": [{"gameVersionTypeId": 517, "releaseType": 1, "filename": "DBM-1.zip"}]}
+    http = FakeHttp({
+        f"{CF}/mods/search?gameId=1&classId=1&gameVersionTypeId=517&sortField=6&sortOrder=desc&index=50&pageSize=50&categoryId=1014": {"data": [mod]},
+        f"{CF}/categories?gameId=1&classId=1": {"data": [
+            {"id": 1014, "name": "Boss Encounters", "parentCategoryId": 1}, {"id": 1028, "name": "Warrior", "parentCategoryId": 1020},
+            {"id": 1, "name": "Addons", "isClass": True}]},
+    })
+    p = CurseForge(http, {"api_key": "k"})
+    [r] = p.top(ctx(), "downloads", "1014", offset=50)
+    assert (r.rank, r.icon, r.external_only, r.version, r.categories) == (1, "https://img/dbm.png", True, "DBM-1", ["Boss Encounters"])
+    assert p.categories(ctx()) == [{"id": "1014", "name": "Boss Encounters"}]
+
+
+def test_curseforge_alternates():
+    http = FakeHttp({f"{CF}/mods/3358": {"data": {
+        "links": {"sourceUrl": "https://github.com/DeadlyBossMods/DeadlyBossMods"},
+        "latestFiles": [
+            {"sortableGameVersions": [{"gameVersionTypeId": 67408}], "modules": [{"name": "DBM-Classic"}]},
+            {"sortableGameVersions": [{"gameVersionTypeId": 517}], "modules": [{"name": "DBM-Core"}, {"name": "DBM-GUI"}]},
+        ]}}})
+    assert CurseForge(http, {"api_key": "k"}).alternates("3358", ctx()) == ("DeadlyBossMods/DeadlyBossMods", ["DBM-Core", "DBM-GUI"])
 
 
 def test_curseforge_fingerprint_matching(tmp_path):

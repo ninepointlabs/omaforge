@@ -14,6 +14,7 @@ from omaforge.core.flavors import parse_version
 from omaforge.core.http import Http, HttpError
 from omaforge.core.models import CHANNELS, InstalledAddon, Release, RemoteAddon
 from omaforge.core.providers import GameContext, Provider, ProviderError, build as build_providers
+from omaforge.core.providers.base import DistributionDisabled
 from omaforge.core.state import State
 
 EXPORT_FORMAT = "omaforge.addons"
@@ -309,6 +310,24 @@ class Manager:
                 errors[name] = str(e)
         return results, errors
 
+    def explore_sources(self) -> list[dict]:
+        return [{"name": p.name, "label": p.label, "sorts": list(p.explore_sorts)}
+                for p in self.providers.values() if p.explore_sorts and p.available]
+
+    def explore(self, client: Client, provider: str, sort: str = "popular", category: str | None = None,
+                offset: int = 0, limit: int = 50) -> list[RemoteAddon]:
+        p = self.providers.get(provider)
+        if p is None or not p.explore_sorts:
+            raise ManagerError(f"{provider} has no ranked addon lists")
+        p.require()
+        return p.top(self.ctx(client), sort, category or None, offset, limit)
+
+    def categories(self, client: Client, provider: str) -> list[dict]:
+        p = self.providers.get(provider)
+        if p is None or not p.available:
+            return []
+        return p.categories(self.ctx(client))
+
     def install(self, client: Client, provider: str, addon_id: str, channel: str | None = None,
                 force: bool = False) -> dict:
         p = self.providers.get(provider)
@@ -319,7 +338,15 @@ class Manager:
         channel = channel or self.state.prefs(client.key, key)["channel"]
         if channel not in CHANNELS:
             raise ManagerError(f"channel must be one of {', '.join(CHANNELS)}")
-        release = p.resolve(addon_id, self.ctx(client), channel)
+        try:
+            release = p.resolve(addon_id, self.ctx(client), channel)
+        except DistributionDisabled as e:
+            alt = self._alternate_source(client, provider, addon_id, channel)
+            if alt is None:
+                raise ManagerError(f"{e}, and no GitHub or WoWInterface copy was found; get it from curseforge.com") from e
+            rec = self.install(client, *alt, channel=channel, force=force)
+            rec["via"] = f"{alt[0]} (CurseForge downloads disabled by the author)"
+            return rec
         if release is None:
             raise ManagerError(f"no {channel} release for {client.label}")
         # Adopt an existing unmanaged copy so its folders are replaced, not duplicated.
@@ -336,6 +363,33 @@ class Manager:
         with self.state.transaction() as st:
             st.set_pref(client.key, key, channel=channel)
         return rec
+
+    def _alternate_source(self, client: Client, provider: str, addon_id: str, channel: str) -> tuple[str, str] | None:
+        """Where else to get an addon whose CurseForge author blocks third-party downloads."""
+        p = self.providers.get(provider)
+        if not hasattr(p, "alternates"):
+            return None
+        ctx = self.ctx(client)
+        try:
+            repo, folders = p.alternates(addon_id, ctx)
+        except (ProviderError, HttpError):
+            return None
+        gh = self.providers.get("github")
+        if repo and gh and gh.available:
+            try:
+                if gh.resolve(repo, ctx, channel):
+                    return "github", repo
+            except (ProviderError, HttpError):
+                pass
+        wowi = self.providers.get("wowinterface")
+        if folders and wowi and wowi.available:
+            try:
+                wid = wowi.find_by_folders(folders, ctx)
+                if wid and wowi.resolve(wid, ctx, channel):
+                    return "wowinterface", wid
+            except (ProviderError, HttpError):
+                pass
+        return None
 
     def _install_release(self, client: Client, release: Release, previous: list[str], name: str,
                          replace_key: str, force: bool = False) -> dict:

@@ -31,31 +31,37 @@ ApplicationWindow {
     palette.mid: theme.border
     palette.dark: theme.border
 
-    // 0 installed, 1 get addons, 2 backups, 3 settings
+    // 0 installed, 1 explore, 2 search, 3 backups, 4 settings
     property int pageIndex: 0
-    readonly property var tabs: ["Installed", "Get addons", "Backups", "Settings"]
+    readonly property var tabs: ["Installed", "Explore", "Search", "Backups", "Settings"]
+    readonly property int settingsPage: 4
 
     function go(i) {
         pageIndex = i
-        if (i === 2) backend.loadBackups()
+        if (i === 1) backend.ensureExplore()
+        if (i === 3) backend.loadBackups()
     }
 
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
     Shortcut { sequence: "Ctrl+R"; onActivated: backend.checkUpdates() }
     Shortcut { sequence: "Ctrl+U"; onActivated: if (backend.updateCount > 0) backend.updateAll() }
     Shortcut { sequence: "Ctrl+F"; onActivated: { win.go(0); installed.focusFilter() } }
-    Shortcut { sequence: "Ctrl+K"; onActivated: { win.go(1); search.focusSearch() } }
+    Shortcut { sequence: "Ctrl+K"; onActivated: { win.go(2); search.focusSearch() } }
     Shortcut { sequence: "Ctrl+1"; onActivated: win.go(0) }
     Shortcut { sequence: "Ctrl+2"; onActivated: win.go(1) }
     Shortcut { sequence: "Ctrl+3"; onActivated: win.go(2) }
-    Shortcut { sequence: "Ctrl+,"; onActivated: win.go(3) }
+    Shortcut { sequence: "Ctrl+4"; onActivated: win.go(3) }
+    Shortcut { sequence: "Ctrl+,"; onActivated: win.go(win.settingsPage) }
 
     Connections {
         target: backend
         function onToast(kind, message) { toast.show(kind, message) }
     }
     readonly property string clientKey: backend.currentClient
-    onClientKeyChanged: if (pageIndex === 2) backend.loadBackups()
+    onClientKeyChanged: {
+        if (pageIndex === 1) backend.ensureExplore()
+        if (pageIndex === 3) backend.loadBackups()
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -141,7 +147,7 @@ ApplicationWindow {
                     Layout.margins: 12
                     Btn { text: "Rescan"; subtle: true; onClicked: backend.rescan() }
                     Item { Layout.fillWidth: true }
-                    Btn { text: "Settings"; subtle: true; active: win.pageIndex === 3; onClicked: win.go(3) }
+                    Btn { text: "Settings"; subtle: true; active: win.pageIndex === win.settingsPage; onClicked: win.go(win.settingsPage) }
                 }
             }
         }
@@ -161,18 +167,18 @@ ApplicationWindow {
                 spacing: 18
                 ColumnLayout {
                     spacing: 2
-                    Label2 { text: win.pageIndex === 3 ? "Settings" : (backend.client.label || "omaforge"); font.pixelSize: 20 }
+                    Label2 { text: win.pageIndex === win.settingsPage ? "Settings" : (backend.client.label || "omaforge"); font.pixelSize: 20 }
                     Label2 {
                         dim: true
                         font.pixelSize: 11
-                        visible: win.pageIndex !== 3 && !!backend.client.path
+                        visible: win.pageIndex !== win.settingsPage && !!backend.client.path
                         text: "build " + (backend.client.version || "?") + " · interface " + (backend.client.interface || "?")
                               + (win.pageIndex === 0 ? " · " + installed.summary : "")
                     }
                 }
                 Item { Layout.fillWidth: true }
                 Repeater {
-                    model: 3
+                    model: 4
                     delegate: Item {
                         id: tab
                         required property int index
@@ -202,6 +208,7 @@ ApplicationWindow {
                     onImportRequested: importDialog.open()
                     onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) }
                 }
+                ExplorePage { id: explore }
                 SearchPage { id: search }
                 BackupsPage { onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) } }
                 SettingsPage { onAddFolderRequested: folderDialog.open() }
@@ -231,7 +238,7 @@ ApplicationWindow {
                     anchors.leftMargin: 16
                     dim: true
                     font.pixelSize: 11
-                    text: backend.busy ? (backend.status || "Working") + "…" : "Ctrl+R check · Ctrl+U update all · Ctrl+K search · Ctrl+F filter"
+                    text: backend.busy ? (backend.status || "Working") + "…" : "Ctrl+R check · Ctrl+U update all · Ctrl+2 explore · Ctrl+K search · Ctrl+F filter"
                 }
             }
         }

@@ -47,6 +47,11 @@ class Backend(QObject):
         self._search_errors: dict = {}
         self._backups: list[dict] = []
         self._providers: list[dict] = []
+        self._explore_sources: list[dict] = []
+        self._explore = {"provider": "", "sort": "popular", "category": "", "client": ""}
+        self._explore_results: list[dict] = []
+        self._explore_categories: list[dict] = []
+        self._explore_more = False
         self._done.connect(self._finish)
         self._run(self._load_clients, self._clients_loaded, "Looking for World of Warcraft")
 
@@ -133,6 +138,34 @@ class Backend(QObject):
     def providers(self):
         return self._providers
 
+    @Property("QVariantList", notify=changed)
+    def exploreSources(self):
+        return self._explore_sources
+
+    @Property(str, notify=changed)
+    def exploreProvider(self):
+        return self._explore["provider"]
+
+    @Property(str, notify=changed)
+    def exploreSort(self):
+        return self._explore["sort"]
+
+    @Property(str, notify=changed)
+    def exploreCategory(self):
+        return self._explore["category"]
+
+    @Property("QVariantList", notify=changed)
+    def exploreCategories(self):
+        return self._explore_categories
+
+    @Property("QVariantList", notify=changed)
+    def exploreResults(self):
+        return self._explore_results
+
+    @Property(bool, notify=changed)
+    def exploreHasMore(self):
+        return self._explore_more
+
     @Property("QVariantMap", notify=changed)
     def settings(self):
         cfg = configmod.load()
@@ -156,10 +189,13 @@ class Backend(QObject):
         clients = self.m.clients(refresh=True)
         providers = [{"name": p.name, "label": p.label, "available": p.available, "reason": p.unavailable_reason}
                      for p in self.m.providers.values()]
-        return [c.to_dict() for c in clients], providers
+        return [c.to_dict() for c in clients], providers, self.m.explore_sources()
 
     def _clients_loaded(self, result) -> None:
-        self._clients, self._providers = result
+        self._clients, self._providers, self._explore_sources = result
+        names = [s["name"] for s in self._explore_sources]
+        if self._explore["provider"] not in names:
+            self._explore.update(provider=names[0] if names else "", category="", client="")
         keys = [c["key"] for c in self._clients]
         if self._current not in keys:
             self._current = self.m.client(None).key if self._clients else ""
@@ -286,17 +322,85 @@ class Backend(QObject):
         client, key = self._client(), self._current
         if client is None or not query.strip():
             return
-        installed = {a["key"] for a in self._addons}
-
         def then(result):
             if key != self._current:
                 return
             results, errors = result
-            self._results = [{**r.to_dict(), "installed": f"{r.provider}:{r.id}" in installed} for r in results]
+            self._results = self._mark_installed([r.to_dict() for r in results])
+            if not self._results and not errors:
+                self.toast.emit("info", f"Nothing found for \"{query}\"")
             self._search_errors = errors
             self.changed.emit()
 
         self._run(lambda: self.m.search(client, query, list(providers) or None), then, f"Searching for {query}")
+
+    # Explore ---------------------------------------------------------------
+    def _installed_keys(self) -> set[str]:
+        """provider:id of every installed addon, including the sources its TOC links to."""
+        keys = set()
+        for a in self._addons:
+            keys.add(a["key"])
+            keys.update(f"{p}:{i}" for p, i in (a.get("links") or {}).items())
+        return keys
+
+    def _mark_installed(self, results: list[dict]) -> list[dict]:
+        installed = self._installed_keys()
+        return [{**r, "installed": f"{r['provider']}:{r['id']}" in installed} for r in results]
+
+    @Slot()
+    def ensureExplore(self) -> None:
+        """Load the ranked list for the current client unless it is already shown."""
+        if self._explore["provider"] and (self._explore["client"] != self._current or not self._explore_results):
+            self.loadExplore(self._explore["provider"], self._explore["sort"], self._explore["category"])
+
+    @Slot(str, str, str)
+    def loadExplore(self, provider: str, sort: str, category: str) -> None:
+        client = self._client()
+        if client is None or not provider:
+            return
+        source = next((s for s in self._explore_sources if s["name"] == provider), None)
+        if source and sort not in source["sorts"]:
+            sort = source["sorts"][0]
+        provider_changed = provider != self._explore["provider"]
+        self._explore.update(provider=provider, sort=sort, category=category, client=self._current)
+        self._explore_results, self._explore_more = [], False
+        if provider_changed:
+            self._explore_categories = []
+        self.changed.emit()
+        key = self._current
+
+        def work():
+            cats = self.m.categories(client, provider) if provider_changed or not self._explore_categories else None
+            return self.m.explore(client, provider, sort, category or None, 0, 50), cats
+
+        def then(result):
+            if key != self._current or provider != self._explore["provider"]:
+                return
+            results, cats = result
+            if cats is not None:
+                self._explore_categories = cats
+            self._explore_results = self._mark_installed([r.to_dict() for r in results])
+            self._explore_more = len(results) == 50
+            self.changed.emit()
+
+        self._run(work, then, "Loading top addons")
+
+    @Slot()
+    def exploreMore(self) -> None:
+        client, e = self._client(), dict(self._explore)
+        if client is None or not self._explore_more:
+            return
+        offset = len(self._explore_results)
+
+        def then(results):
+            if e != self._explore:
+                return
+            self._explore_results = self._explore_results + self._mark_installed([r.to_dict() for r in results])
+            self._explore_more = len(results) == 50
+            self.changed.emit()
+
+        self._run(lambda: self.m.explore(client, e["provider"], e["sort"], e["category"] or None, offset, 50),
+                  then, "Loading more")
 
     @Slot(str, str, str)
     def install(self, provider: str, addon_id: str, channel: str) -> None:
@@ -306,10 +410,12 @@ class Backend(QObject):
 
         def then(rec):
             warn = "" if rec["compat"] == "ok" else " (flavor not verified for this client)"
-            self.toast.emit("info", f"Installed {rec['name']} {rec['version']}{warn}")
-            for r in self._results:
+            via = f" from {rec['via']}" if rec.get("via") else ""
+            self.toast.emit("info", f"Installed {rec['name']} {rec['version']}{via}{warn}")
+            for r in self._results + self._explore_results:
                 if r["provider"] == provider and r["id"] == addon_id:
                     r["installed"] = True
+            self.changed.emit()
             self.refresh()
 
         self._run(lambda: self.m.install(client, provider, addon_id, channel or None), then, "Installing")

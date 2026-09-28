@@ -54,6 +54,9 @@ class WoWInterface(Provider):
             updated=int(e.get("UIDate") or 0) // 1000,
             folders=list(e.get("UIDir") or []),
             compatible=self.compatible(e, ctx),
+            downloads_monthly=int(e.get("UIDownloadMonthly") or 0),
+            favorites=int(e.get("UIFavoriteTotal") or 0),
+            icon=next(iter(e.get("UIIMG_Thumbs") or []), ""),
         )
 
     def search(self, query: str, ctx: GameContext, limit: int = 50) -> list[RemoteAddon]:
@@ -83,6 +86,37 @@ class WoWInterface(Provider):
             scored.append((score, -int(e.get("UIDownloadTotal") or 0), e))
         scored.sort(key=lambda s: (s[0], s[1]))
         return [self._remote(e, ctx) for _, _, e in scored[:limit]]
+
+    explore_sorts = ("popular", "downloads", "updated", "favorites", "name")
+
+    def find_by_folders(self, folders: list[str], ctx: GameContext) -> str | None:
+        """The WoWInterface id of the addon shipping (mostly) these folders."""
+        if not folders:
+            return None
+        want = {f.lower() for f in folders}
+        best = None
+        for e in self._filelist():
+            dirs = {d.lower() for d in e.get("UIDir") or []}
+            if not (want & dirs) or not self.compatible(e, ctx):
+                continue
+            overlap = len(want & dirs) / len(want | dirs)
+            if overlap >= 0.5 and (best is None or overlap > best[0]):
+                best = (overlap, str(e["UID"]))
+        return best[1] if best else None
+
+    def top(self, ctx: GameContext, sort: str = "popular", category: str | None = None,
+            offset: int = 0, limit: int = 50) -> list[RemoteAddon]:
+        # Only addons whose author lists this game; search is more lenient.
+        entries = [e for e in self._filelist() if e.get("UICompatibility") and self.compatible(e, ctx)]
+        keys = {
+            "popular": lambda e: -int(e.get("UIDownloadMonthly") or 0),
+            "downloads": lambda e: -int(e.get("UIDownloadTotal") or 0),
+            "updated": lambda e: -int(e.get("UIDate") or 0),
+            "favorites": lambda e: -int(e.get("UIFavoriteTotal") or 0),
+            "name": lambda e: (e.get("UIName") or "").lower(),
+        }
+        entries.sort(key=keys.get(sort, keys["popular"]))
+        return [self._remote(e, ctx) for e in entries[offset : offset + limit]]
 
     def get_addon(self, addon_id: str, ctx: GameContext) -> RemoteAddon:
         d = self._details(addon_id)

@@ -206,7 +206,7 @@ ColumnLayout {
             dim: true
             horizontalAlignment: Text.AlignHCenter
             text: page.filter ? "No addons match \"" + page.filter + "\""
-                              : "No addons installed yet.\nFind some under Get addons."
+                              : "No addons installed yet.\nBrowse the most popular under Explore."
         }
     }
 }

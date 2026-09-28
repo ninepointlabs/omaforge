@@ -69,11 +69,14 @@ def test_main_window_loads_without_qml_warnings(app, wow_root, tmp_path):
         assert [a["name"] for a in backend.addons] == ["Local Thing"]
 
         win = engine.rootObjects()[0]
-        for page in (1, 2, 3, 0):
+        for page in (1, 2, 3, 4, 0):
             win.setProperty("pageIndex", page)
-            if page == 2:
+            if page == 1:
+                backend.ensureExplore()
+            if page == 3:
                 backend.loadBackups()
             wait(app, backend)
+        assert backend.exploreSources == []  # every provider is disabled here
 
         backend.createBackup()
         wait(app, backend)
