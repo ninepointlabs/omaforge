@@ -1,6 +1,6 @@
 [project]
 name = "omaforge"
-version = "0.2.0"
+version = "0.2.1"
 description = "World of Warcraft addon manager for Omarchy"
 requires-python = ">=3.14"
 license = "MIT"
@@ -21,7 +21,7 @@ include = ["omaforge*"]
 
 [tool.setuptools.package-data]
 "omaforge.core" = ["flavors.toml"]
-"omaforge.ui" = ["qml/*.qml", "icons/*"]
+"omaforge.ui" = ["qml/*", "icons/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -2,6 +2,7 @@
 
 import os
 import signal
+import subprocess
 import sys
 from pathlib import Path
 
@@ -33,7 +34,17 @@ def run(argv: list[str] | None = None) -> int:
     engine.rootContext().setContextProperty("backend", backend)
     engine.load(QML_DIR / "Main.qml")
     if not engine.rootObjects():
+        msg = "omaforge: the interface failed to load (see the QML errors above); please report this"
+        print(msg, file=sys.stderr)
+        if os.environ.get("OMAFORGE_SELFTEST") != "1":
+            subprocess.run(["notify-send", "-a", "omaforge", "-u", "critical", "omaforge could not start",
+                            "The interface failed to load. Run `omaforge` in a terminal for details."], check=False)
         return 1
+    if os.environ.get("OMAFORGE_SELFTEST") == "1":
+        # Used by the release workflow against the installed package.
+        backend.shutdown()
+        print("omaforge: interface loaded")
+        return 0
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     code = app.exec()
     backend.shutdown()

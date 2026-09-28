@@ -34,6 +34,9 @@ jobs:
           su builder -w OMAFORGE_CURSEFORGE_BUILD_KEY -c "makepkg -f --noconfirm --skipchecksums"
           pkg=$(ls omaforge-*.pkg.tar.zst)
           bsdtar -tf "$pkg" | grep -q _buildkey.py && echo "CurseForge key embedded" || echo "::warning::built without a CurseForge key"
+          # Install the package and load the real UI from it: catches files missing from the package.
+          pacman -U --noconfirm "$pkg"
+          su builder -c "cd /tmp && QT_QPA_PLATFORM=offscreen OMAFORGE_SELFTEST=1 omaforge"
           sha256sum "$pkg" > "$pkg.sha256"
       - name: Publish release
         env:
