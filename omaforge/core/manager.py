@@ -1,5 +1,6 @@
 """The one entry point the CLI and the UI use. Everything else is plumbing."""
 
+import re
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -30,6 +31,14 @@ def same_version(a: str, b: str) -> bool:
         return v[1:] if v.startswith("v") and v[1:2].isdigit() else v
 
     return norm(a) == norm(b)
+
+
+def display_name(toc_title: str, repo: str) -> str:
+    """A GitHub addon's name: its TOC title, unless that is decorated ("<DBM Core> Main Core")."""
+    if toc_title and not re.search(r"[<>\[\]{}]", toc_title):
+        return toc_title
+    words = re.sub(r"([a-z])([A-Z])", r"\1 \2", repo.split("/")[-1]).replace("-", " ").replace("_", " ")
+    return words.strip() or repo
 
 
 @dataclass
@@ -404,6 +413,12 @@ class Manager:
                 owners = {f: k for k, r in st.addons(client.key).items() if k not in (key, replace_key)
                           for f in r.get("folders", [])}
                 new = install.install_zip(zip_path, client.addons_dir, previous=previous, owners=owners, force=force)
+                if release.provider == "github":
+                    # A repo name ("WeakAuras2") is a poor display name; use the addon's own title.
+                    folders = scan.read_folders(client.addons_dir, self._suffixes(client))
+                    present = [f for f in new if f in folders]
+                    if present:
+                        name = display_name(folders[scan.main_folder(present, folders)].title, release.addon_id)
                 # Folders taken over from other records (with --force) leave those records.
                 for k, r in list(st.addons(client.key).items()):
                     if k in (key, replace_key):

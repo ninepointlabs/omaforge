@@ -28,6 +28,7 @@ ColumnLayout {
         spacing: 8
         Field {
             id: query
+            objectName: "searchQuery"
             Layout.fillWidth: true
             placeholderText: "Search addons for " + (backend.client.label || "this client") + ", or paste a GitHub repo"
             onAccepted: page.run()
@@ -51,6 +52,7 @@ ColumnLayout {
         }
         Choice {
             id: sortBox
+            objectName: "searchSort"
             implicitWidth: 170
             model: Object.keys(Fmt.sorters)
             ToolTip.visible: hovered

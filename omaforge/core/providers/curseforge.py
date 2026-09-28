@@ -24,6 +24,11 @@ SORT_FIELDS = {"popular": 2, "updated": 3, "name": 4, "downloads": 6}
 RELEASE_TYPES = {1: "stable", 2: "beta", 3: "alpha"}
 
 
+def clean_version(display_name: str) -> str:
+    """'Plater-v656' -> 'v656', 'RareScanner_12.1.0.11' -> '12.1.0.11'; 'v426' is unchanged."""
+    return re.sub(r"^[A-Za-z][\w.']*?[-_ ]+(?=v?\d)", "", display_name.strip()) or display_name
+
+
 def _ts(iso: str | None) -> int:
     if not iso:
         return 0
@@ -66,7 +71,7 @@ class CurseForge(Provider):
             summary=m.get("summary", ""),
             url=(m.get("links") or {}).get("websiteUrl", ""),
             downloads=int(m.get("downloadCount") or 0),
-            version=next((i["filename"].removesuffix(".zip") for i in idx if i.get("releaseType") == 1), ""),
+            version=next((clean_version(i["filename"].removesuffix(".zip")) for i in idx if i.get("releaseType") == 1), ""),
             updated=_ts(m.get("dateReleased")),
             compatible=bool(idx),
             rank=int(m.get("gamePopularityRank") or 0),
@@ -123,7 +128,7 @@ class CurseForge(Provider):
                 Release(
                     provider=self.name,
                     addon_id=str(addon_id),
-                    version=f.get("displayName") or f.get("fileName", ""),
+                    version=clean_version(f.get("displayName") or f.get("fileName", "")),
                     download_url=f.get("downloadUrl") or "",
                     filename=f.get("fileName", ""),
                     channel=RELEASE_TYPES.get(f.get("releaseType"), "alpha"),
@@ -187,7 +192,7 @@ class CurseForge(Provider):
                         continue
                     matched |= set(mod_folders)
                     out.append(Match(self.name, str(m["id"]), mod_folders, "fingerprint",
-                                     version=file.get("displayName", "")))
+                                     version=clean_version(file.get("displayName", ""))))
         # Without a fingerprint match, the TOC header still links the addon.
         for g in groups:
             if set(g) & matched:

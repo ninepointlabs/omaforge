@@ -1,71 +1,105 @@
-# omaforge
+<p align="center">
+  <img src="omaforge/ui/icons/omaforge.svg" width="96" alt="">
+</p>
 
-A World of Warcraft addon manager for [Omarchy](https://omarchy.org). It finds
-every WoW client in your Wine prefixes, shows what each one has installed, and
-installs and updates addons from CurseForge, WoWInterface and GitHub. It
-follows your Omarchy theme and has a CLI for timers and keybindings.
+<h1 align="center">omaforge</h1>
 
-## What it does
+<p align="center">
+  A World of Warcraft addon manager for <a href="https://omarchy.org">Omarchy</a>.<br>
+  Retail, Classic, Forever and every PTR and beta, running under Wine or Proton.
+</p>
 
-- **Finds your games.** Scans Lutris, Steam/Proton, Bottles, Heroic and
-  `~/.wine` prefixes (and any folder you add) for `World of Warcraft`, then
-  every `_*_` client folder inside: Retail, PTR, beta, Classic Era,
-  progression Classic, anniversary realms and **World of Warcraft: Forever**.
-- **Knows what's installed, even if omaforge didn't install it.**
-  - CurseForge folder fingerprints identify the exact file.
-  - TOC headers (`X-Curse-Project-ID`, `X-WoWI-ID`, `X-Wago-ID`) link addons to their sources.
-  - WoWInterface folder lists and `X-Website` GitHub links catch the rest.
-  - Multi-folder addons (DBM, BigWigs, ElvUI) show as one entry.
-  - Anything unmatched is listed as *unknown*, never hidden.
-- **Updates safely.** Downloads are extracted next to `AddOns` and swapped in
-  with atomic renames; a failure rolls back. Folders an update no longer
-  ships are removed. `WTF` is backed up before every bulk update, and backups
-  can be restored.
-- **Finds the good stuff.** Explore ranks the top addons for the selected
-  game by popularity, downloads or recent updates, from CurseForge (with its
-  categories) or WoWInterface (monthly downloads, favorites). Search results
-  show the same numbers and sort by them. Neither site publishes ratings;
-  CurseForge's popularity rank and WoWInterface favorites are the closest.
-- **Per-addon control.** Pin a version, ignore an addon, or follow its
+<p align="center">
+  <a href="https://github.com/ninepointlabs/omaforge/releases/latest"><img src="https://img.shields.io/github/v/release/ninepointlabs/omaforge?label=release" alt="Latest release"></a>
+  <a href="https://github.com/ninepointlabs/omaforge/actions/workflows/ci.yml"><img src="https://github.com/ninepointlabs/omaforge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/ninepointlabs/omaforge" alt="MIT license"></a>
+</p>
+
+![Installed addons for Retail, with two updates waiting](docs/screenshots/installed.png)
+
+omaforge finds every WoW client in your Wine prefixes and shows what each one
+has installed, including addons it did not install itself. It installs and
+updates addons from CurseForge, WoWInterface and GitHub. It follows your
+Omarchy theme and includes a command line for timers and keybindings.
+
+## Contents
+
+- [Features](#features)
+- [Install](#install)
+- [Using it](#using-it)
+- [Command line](#command-line)
+- [Addon sources](#addon-sources)
+- [Game versions](#game-versions)
+- [Files](#files)
+- [Development](#development)
+
+## Features
+
+**Every client, found for you.** omaforge scans Lutris, Steam/Proton, Bottles,
+Heroic and `~/.wine` prefixes, plus any folder you add, for
+`World of Warcraft`. It lists every client folder inside: Retail, PTR, xPTR,
+beta, Classic Era, progression Classic, anniversary realms and
+**World of Warcraft: Forever**. Each client is a separate entry in the sidebar.
+
+**Knows what you already have.** Copies you installed by hand or with another
+manager are recognized:
+
+- CurseForge folder fingerprints identify the exact file you have.
+- TOC headers (`X-Curse-Project-ID`, `X-WoWI-ID`, `X-Wago-ID`) link addons to their sources.
+- WoWInterface folder lists and GitHub links in the TOC catch the rest.
+- Addons spread over many folders (DBM, BigWigs, ElvUI, WeakAuras) show as one
+  entry, and uninstalling removes every folder.
+- Anything omaforge can't place is listed as *unknown*, never hidden.
+
+**Finds the good stuff.** Explore ranks the top addons for the selected game,
+with icons, download counts and categories.
+
+![Explore: the most popular Retail addons on CurseForge](docs/screenshots/explore.png)
+
+- **CurseForge:** rank by popularity, total downloads or recent updates, and
+  filter by category.
+- **WoWInterface:** rank by downloads this month, total downloads, favorites or
+  recent updates.
+
+Each game version gets its own list, so Forever shows Forever addons:
+
+![Explore: the most favorited Forever addons on WoWInterface](docs/screenshots/explore-forever.png)
+
+Neither site publishes star ratings. CurseForge's popularity rank and
+WoWInterface's favorites are the closest signals, so those are what omaforge
+shows.
+
+**Search across sources** and sort the results by downloads, popularity,
+favorites, recent updates or name. Paste a GitHub URL to install straight from
+a repository's releases.
+
+![Search results for WeakAuras, sorted by downloads](docs/screenshots/search.png)
+
+**Updates without surprises.**
+
+- **Safe updates:** each download is unpacked next to `AddOns`, then swapped
+  in with atomic renames. If anything fails, the previous version is put back.
+  Folders a new version no longer ships are removed.
+- **Your control:** pin an addon to keep its version, ignore it, or follow its
   stable, beta or alpha channel.
-- **Moves with you.** Export a client's addon list to JSON and import it on
-  another machine or client.
+- **Settings are protected:** `WTF` (SavedVariables, keybindings, client
+  settings) is backed up before every bulk update, and any backup can be
+  restored from the Backups tab.
 
-## Sources
+![WTF backups with restore](docs/screenshots/backups.png)
 
-| Source | Needs | Notes |
-|---|---|---|
-| CurseForge | API key issued to omaforge | Search, top lists, install, update, fingerprint matching. About half of the most popular addons have third-party downloads turned off by their authors; omaforge then installs the same addon from its GitHub releases or WoWInterface when one exists, and otherwise points to curseforge.com. |
-| WoWInterface | nothing | Public MMOUI API. One release per addon (stable). |
-| GitHub | nothing (token optional) | Releases built with the BigWigs packager; `release.json` picks the right zip per flavor. A token raises the rate limit from 60 to 5,000 requests an hour. |
-| Wago Addons | API key | Stubbed until access is granted. |
+**Looks like Omarchy.** omaforge uses the active Omarchy theme's colors and
+font, and re-themes live when you run `omarchy theme set`.
 
-omaforge never scrapes websites and never uses another app's API keys.
+![omaforge in Tokyo Night, Catppuccin Latte, Gruvbox and Rosé Pine](docs/screenshots/themes.png)
 
-## Game versions
-
-Clients are identified from their files: `.flavor.info` gives the product
-(`wow`, `wow_classic_era`, `wow_classic_beta`, ...), and `.build.info` gives its
-version. One table, [`omaforge/core/flavors.toml`](omaforge/core/flavors.toml),
-maps them to a game, the TOC suffixes that game reads, and the packager and
-CurseForge flavors to install. To add a branch without a code change, put rules
-in `~/.config/omaforge/flavors.toml`; they are tried before the built-in ones.
-
-**Forever**:
-
-- The beta client is `_classic_beta_`, product `wow_classic_beta`, version
-  1.60.x (interface 16001).
-- The BigWigs packager builds for it as flavor `forever` (alias `camelot`),
-  with `_Camelot` TOC files.
-- CurseForge lists it as game version type 88568.
-- Whether the client also reads `_Classic` TOCs has not been confirmed.
-- The live client's product id is unknown, so any client in the 1.60 range is
-  treated as Forever. That rule is marked unverified.
+**Moves with you.** Export a client's addon list to JSON and import it on
+another machine or into another client.
 
 ## Install
 
 On Arch or Omarchy, download the package from the
-[latest release](https://github.com/ninepointlabs/omaforge/releases/latest) and:
+[latest release](https://github.com/ninepointlabs/omaforge/releases/latest) and run:
 
 ```sh
 sudo pacman -U omaforge-*-any.pkg.tar.zst
@@ -73,9 +107,15 @@ omaforge setup omarchy                                 # "WoW Addons" in the Oma
 omaforge setup omarchy --keybind "SUPER + SHIFT + Z"   # optional keybinding
 ```
 
+omaforge also appears in the app launcher as **Omaforge**.
+`omaforge setup omarchy --remove` removes the menu entry and keybinding. Both
+are kept between marker comments in
+`~/.config/omarchy/extensions/omarchy-menu.jsonc` and
+`~/.config/hypr/bindings.lua`, and a backup is written first.
+
 Release packages include omaforge's CurseForge API key, so CurseForge works out
-of the box. Building from source (`cd packaging && makepkg -si`) gives a
-package without it; add your own key under **Settings** or in
+of the box. A package built from source (`cd packaging && makepkg -si`, or the
+AUR) doesn't include it. Add your own key under **Settings**, or in
 `~/.config/omaforge/config.toml`:
 
 ```toml
@@ -83,32 +123,40 @@ package without it; add your own key under **Settings** or in
 api_key = "..."
 ```
 
-The launcher entry comes from the desktop file. `omaforge setup omarchy --remove`
-undoes the menu entry and keybinding, which live between marker comments in
-`~/.config/omarchy/extensions/omarchy-menu.jsonc` and `~/.config/hypr/bindings.lua`
-(a backup is written first).
+For daily updates with a desktop notification:
 
-## Releasing
+```sh
+systemctl --user enable --now omaforge-update.timer
+```
 
-Bump `pkgver` in `packaging/PKGBUILD` and `version` in `pyproject.toml` /
-`omaforge/__init__.py`, then push a `v<version>` tag. The Release workflow
-builds the package in an Arch container, embeds the CurseForge key from the
-`CURSEFORGE_API_KEY` repository secret (obfuscated; see
-`omaforge/buildkey.py`), runs the tests and attaches the package to a GitHub
-release. The key is never committed.
+## Using it
+
+| Key | Action |
+|---|---|
+| <kbd>Ctrl</kbd>+<kbd>R</kbd> | check for updates |
+| <kbd>Ctrl</kbd>+<kbd>U</kbd> | update everything that isn't pinned or ignored |
+| <kbd>Ctrl</kbd>+<kbd>1</kbd>…<kbd>4</kbd> | Installed, Explore, Search, Backups |
+| <kbd>Ctrl</kbd>+<kbd>K</kbd> | search |
+| <kbd>Ctrl</kbd>+<kbd>F</kbd> | filter installed addons |
+| <kbd>Ctrl</kbd>+<kbd>,</kbd> | settings |
+| <kbd>Ctrl</kbd>+<kbd>Q</kbd> | quit |
+
+Hover over an addon's folder count to see its folders, and over a client in
+the sidebar to see where it lives.
 
 ## Command line
 
+Everything the app does is also available as a command:
+
 ```sh
-omaforge                      # open the app
-omaforge clients              # detected clients
-omaforge list --check -c forever
-omaforge search bigwigs -c retail --sort downloads
-omaforge explore -c forever                     # top 25 by CurseForge popularity
+omaforge                          # open the app
+omaforge clients                  # detected clients
+omaforge list --check -c forever  # installed addons and available updates
+omaforge update --all --notify    # update every client; WTF is backed up first
+omaforge explore -c forever       # top 25 Forever addons on CurseForge
 omaforge explore -p wowi --sort favorites -n 50
-omaforge explore --categories                   # then --category <id>
+omaforge search weakauras --sort downloads
 omaforge install curseforge:2382 github:DeadlyBossMods/DeadlyBossMods wowi:11190
-omaforge update --all --notify   # every client; WTF backed up first
 omaforge pin|unpin|ignore|unignore <addon>
 omaforge channel <addon> beta
 omaforge uninstall <addon>
@@ -117,14 +165,48 @@ omaforge export retail.json && omaforge import retail.json -c forever
 omaforge setup omarchy [--keybind KEYS] [--remove]
 ```
 
-Every command takes `--json` and `--offline`. Addons can be named by key,
-folder or title.
+- Addons can be named by key, folder or title.
+- `-c` picks a client by game (`retail`, `forever`), folder (`classic_beta`) or key.
+- Every command takes `--json` for scripts and `--offline` to use cached data only.
 
-Daily updates with a notification:
+## Addon sources
 
-```sh
-systemctl --user enable --now omaforge-update.timer
-```
+| Source | Needs | Notes |
+|---|---|---|
+| CurseForge | API key (included in release builds) | Search, top lists, install, update, fingerprint matching. See below for addons whose authors disable downloads in other apps. |
+| WoWInterface | nothing | Public MMOUI API. One release per addon. |
+| GitHub | nothing (token optional) | Releases built with the BigWigs packager; `release.json` picks the right zip for each game. A token raises the rate limit from 60 to 5,000 requests an hour. |
+| Wago Addons | API key | Stubbed until access is granted. |
+
+About half of the most popular CurseForge addons have downloads in other apps
+turned off by their authors. For those, omaforge looks for the same addon on
+GitHub (using the source link on its CurseForge page) or on WoWInterface. If
+it finds one, it installs from there and keeps updating from that source.
+Otherwise it says so, and **Page** opens the addon on curseforge.com.
+
+omaforge never scrapes websites and never uses another app's API keys.
+
+## Game versions
+
+Clients are identified from their files: `.flavor.info` gives the product
+(`wow`, `wow_classic_era`, `wow_classic_beta`, …), and `.build.info` gives its
+version. One table, [`omaforge/core/flavors.toml`](omaforge/core/flavors.toml),
+maps these to a game, the TOC suffixes that game reads, and the release flavors
+to install. To add a branch without a code change, put rules in
+`~/.config/omaforge/flavors.toml`; they are tried before the built-in ones.
+
+**World of Warcraft: Forever**
+
+- The beta client is `_classic_beta_`, product `wow_classic_beta`, version
+  1.60.x (interface 16001).
+- The BigWigs packager builds for it as flavor `forever` (alias `camelot`),
+  with `_Camelot` TOC files.
+- CurseForge lists it as game version type 88568.
+- Whether the client also reads `_Classic` TOCs hasn't been confirmed.
+- The live client's product id is unknown, so any client in the 1.60 range is
+  treated as Forever. That rule is marked unverified.
+- WoWInterface can't tell Forever and Classic Era addons apart, so its Forever
+  lists include Classic Era addons.
 
 ## Files
 
@@ -145,5 +227,30 @@ uv pip install --python .venv/bin/python pytest
 .venv/bin/python -m omaforge
 ```
 
-The core (`omaforge/core`) has no Qt dependency; the UI (`omaforge/ui`) is
-PySide6 + Qt Quick and talks to the core only through `Manager`.
+- **Structure:** the core (`omaforge/core`) has no Qt dependency. The UI
+  (`omaforge/ui`) is PySide6 + Qt Quick and talks to the core only through
+  `Manager`.
+- **Screenshots:** `tools/screenshots.py` regenerates the images in
+  `docs/screenshots` from the real UI, offscreen. Point it at a demo install,
+  not your own, because paths show up in the UI.
+
+### Releasing
+
+1. Bump `pkgver` in `packaging/PKGBUILD` and `version` in `pyproject.toml` and
+   `omaforge/__init__.py`.
+2. Push a `v<version>` tag.
+
+The Release workflow then:
+
+- builds the package in an Arch container, with the CurseForge key from the
+  `CURSEFORGE_API_KEY` repository secret embedded (obfuscated; see
+  `omaforge/buildkey.py`),
+- runs the tests,
+- installs the package and loads the UI from it,
+- attaches the package to a GitHub release.
+
+The key is never committed.
+
+## License
+
+MIT

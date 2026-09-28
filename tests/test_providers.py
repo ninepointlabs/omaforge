@@ -234,7 +234,7 @@ def test_curseforge_top_and_categories():
     })
     p = CurseForge(http, {"api_key": "k"})
     [r] = p.top(ctx(), "downloads", "1014", offset=50)
-    assert (r.rank, r.icon, r.external_only, r.version, r.categories) == (1, "https://img/dbm.png", True, "DBM-1", ["Boss Encounters"])
+    assert (r.rank, r.icon, r.external_only, r.version, r.categories) == (1, "https://img/dbm.png", True, "1", ["Boss Encounters"])
     assert p.categories(ctx()) == [{"id": "1014", "name": "Boss Encounters"}]
 
 
@@ -279,3 +279,12 @@ def test_wago_stub():
     assert not Wago(FakeHttp(), {"api_key": ""}).available
     w = Wago(FakeHttp(), {"api_key": "key"})
     assert not w.available and "not implemented" in w.unavailable_reason
+
+
+@pytest.mark.parametrize("raw,clean", [
+    ("Plater-v656", "v656"), ("RareScanner_12.1.0.11", "12.1.0.11"), ("v426", "v426"),
+    ("12.1.11", "12.1.11"), ("LittleWigs-v12.1.18", "v12.1.18"), ("Questie v12.0.2+v1.0.4", "v12.0.2+v1.0.4"),
+    ("Details.20260901.13950.160", "Details.20260901.13950.160"), ("release", "release"),
+])
+def test_curseforge_clean_version(raw, clean):
+    assert cfmod.clean_version(raw) == clean

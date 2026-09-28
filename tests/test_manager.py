@@ -65,6 +65,7 @@ def test_install_update_pin_uninstall(world):
 
     [a] = world.m.installed(world.retail)
     assert (a.key, a.managed, a.match, a.folders) == ("github:o/Foo", True, "state", ["Foo", "Foo_Options"])
+    assert a.name == "Foo"  # the TOC title, not the repo name
 
     world.publish("v2", ["Foo"])
     [a] = world.m.check_updates(world.retail)
@@ -146,7 +147,7 @@ def test_export_import_roundtrip(world, wow_root):
     world.m.set_pref(world.retail, "github:o/Foo", pinned=True)
     make_addon(world.addons, "Local")
     data = json.loads(json.dumps(world.m.export(world.retail)))
-    assert data["addons"] == [{"provider": "github", "id": "o/Foo", "name": "o/Foo", "version": "v1",
+    assert data["addons"] == [{"provider": "github", "id": "o/Foo", "name": "Foo", "version": "v1",
                                "channel": "beta", "pinned": True, "ignored": False}]
     assert data["unknown"] == [{"name": "Local", "folders": ["Local"]}]
 
@@ -202,3 +203,11 @@ def test_explore_requires_ranking_provider(world):
     with pytest.raises(ManagerError):
         world.m.explore(world.retail, "github")
     assert [s["name"] for s in world.m.explore_sources()] == ["wowinterface"]
+
+
+def test_display_name():
+    from omaforge.core.manager import display_name
+
+    assert display_name("WeakAuras", "WeakAuras/WeakAuras2") == "WeakAuras"
+    assert display_name("<DBM Core> Main Core", "DeadlyBossMods/DeadlyBossMods") == "Deadly Boss Mods"
+    assert display_name("", "o/some-addon_name") == "some addon name"

@@ -125,9 +125,9 @@ ApplicationWindow {
                             }
                             Item { Layout.fillHeight: true }
                         }
-                        ToolTip.visible: hover.hovered && item.modelData.notes.length > 0
+                        ToolTip.visible: hover.hovered
                         ToolTip.delay: 500
-                        ToolTip.text: item.modelData.notes.join("\n") + "\n" + item.modelData.path
+                        ToolTip.text: item.modelData.path + (item.modelData.notes.length ? "\n\n" + item.modelData.notes.join("\n") : "")
                     }
                 }
                 Label2 {
