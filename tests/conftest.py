@@ -15,6 +15,10 @@ def xdg(tmp_path, monkeypatch):
         monkeypatch.setenv(var, str(tmp_path / "xdg" / var.lower()))
     for var in ("OMAFORGE_GITHUB_TOKEN", "OMAFORGE_WAGO_API_KEY", "OMAFORGE_CURSEFORGE_API_KEY", "WINEPREFIX"):
         monkeypatch.delenv(var, raising=False)
+    # Release builds embed a CurseForge key; tests must not see (or use) it.
+    from omaforge import buildkey
+
+    monkeypatch.setattr(buildkey, "builtin_curseforge_key", lambda: "")
 
 
 @pytest.fixture

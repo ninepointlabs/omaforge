@@ -32,5 +32,10 @@ def test_write_command_without_env_builds_keyless(monkeypatch, tmp_path):
 
 
 def test_repository_never_contains_generated_key():
+    import pytest
+
+    root = buildkey.TARGET.parent.parent
+    if not (root / ".git").exists():
+        pytest.skip("not a git checkout (e.g. building from a release tarball)")
     tracked = subprocess.run(["git", "ls-files"], capture_output=True, text=True, cwd=buildkey.TARGET.parent.parent).stdout
     assert "omaforge/_buildkey.py" not in tracked.split()
