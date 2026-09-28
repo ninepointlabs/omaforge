@@ -26,7 +26,7 @@ optdepends=(
   'xdg-desktop-portal: native file and folder pickers'
 )
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('515ceb916c3a2231a79c8e14c5f92bf5afbd0eccb0558219ec7d31d0ff718b9b')
 
 build() {
   cd "$pkgname-$pkgver"
