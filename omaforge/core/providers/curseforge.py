@@ -61,7 +61,7 @@ class CurseForge(Provider):
             summary=m.get("summary", ""),
             url=(m.get("links") or {}).get("websiteUrl", ""),
             downloads=int(m.get("downloadCount") or 0),
-            version=next((i["filename"] for i in idx if i.get("releaseType") == 1), ""),
+            version=next((i["filename"].removesuffix(".zip") for i in idx if i.get("releaseType") == 1), ""),
             updated=_ts(m.get("dateReleased")),
             compatible=bool(idx),
         )
