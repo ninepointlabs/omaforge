@@ -1,6 +1,7 @@
 """Start the Qt Quick app."""
 
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -36,7 +37,7 @@ def run(argv: list[str] | None = None) -> int:
     if not engine.rootObjects():
         msg = "omaforge: the interface failed to load (see the QML errors above); please report this"
         print(msg, file=sys.stderr)
-        if os.environ.get("OMAFORGE_SELFTEST") != "1":
+        if os.environ.get("OMAFORGE_SELFTEST") != "1" and shutil.which("notify-send"):
             subprocess.run(["notify-send", "-a", "omaforge", "-u", "critical", "omaforge could not start",
                             "The interface failed to load. Run `omaforge` in a terminal for details."], check=False)
         return 1

@@ -27,6 +27,12 @@ class SetupError(Exception):
     pass
 
 
+def require_omarchy() -> None:
+    if not shutil.which("omarchy"):
+        raise SetupError("`omarchy` not found; `setup omarchy` only applies to Omarchy systems. "
+                         "Elsewhere, launch omaforge from your app launcher or run `omaforge`.")
+
+
 def menu_path(home: Path) -> Path:
     return home / ".config/omarchy/extensions/omarchy-menu.jsonc"
 

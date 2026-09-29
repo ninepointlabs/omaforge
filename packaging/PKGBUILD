@@ -8,7 +8,7 @@ url='https://github.com/ninepointlabs/omaforge'
 license=('MIT')
 depends=(
   'hicolor-icon-theme'
-  'python>=3.14'
+  'python>=3.11'
   'pyside6'
   'qt6-declarative'
   'qt6-svg'

@@ -1,12 +1,17 @@
 name: Release
 
-# Push a tag like v0.1.0 to build the Arch/Omarchy package and publish it.
+# Push a tag like v0.1.0 to build the Arch/Omarchy, .deb and .rpm packages,
+# install each on its distribution, and publish them.
 on:
   push:
     tags: ["v*"]
 
 permissions:
   contents: write
+
+env:
+  NFPM_VERSION: 2.47.0
+  NFPM_SHA256: 0660ca602b2d2d2ae4781a06c692b3eeb9d437ffea05b831d76e41f4a3188783
 
 jobs:
   package:
@@ -18,9 +23,9 @@ jobs:
           pacman -Syu --noconfirm --needed base-devel git github-cli python pyside6 qt6-declarative qt6-svg \
             python-build python-installer python-setuptools python-wheel python-pytest xdg-utils hicolor-icon-theme
       - uses: actions/checkout@v4
-      - name: Build package
+      - name: Build Arch package
         env:
-          # Embedded (obfuscated) in the release package only; never committed.
+          # Embedded (obfuscated) in the release packages only; never committed.
           OMAFORGE_CURSEFORGE_BUILD_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -37,12 +42,73 @@ jobs:
           # Install the package and load the real UI from it: catches files missing from the package.
           pacman -U --noconfirm "$pkg"
           su builder -c "cd /tmp && QT_QPA_PLATFORM=offscreen OMAFORGE_SELFTEST=1 omaforge"
-          sha256sum "$pkg" > "$pkg.sha256"
+      - name: Build .deb and .rpm
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          cd packaging
+          curl -fsSLo nfpm.tar.gz "https://github.com/goreleaser/nfpm/releases/download/v$NFPM_VERSION/nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz"
+          echo "$NFPM_SHA256  nfpm.tar.gz" | sha256sum -c -
+          tar -xzf nfpm.tar.gz nfpm && rm nfpm.tar.gz
+          # The wheel makepkg just built (key included), so all three packages ship the same files.
+          python -m zipfile -e "src/omaforge-$version/dist/omaforge-$version-py3-none-any.whl" stage
+          VERSION="$version" ./nfpm package -f nfpm.yaml -p deb -t .
+          VERSION="$version" ./nfpm package -f nfpm.yaml -p rpm -t .
+          mkdir ../dist
+          mv omaforge-*.pkg.tar.zst omaforge_*.deb omaforge-*.rpm ../dist/
+          cd ../dist && for f in *; do sha256sum "$f" > "$f.sha256"; done && ls -l
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: dist/
+
+  # Install each package on a clean system and load the real UI from it.
+  test-deb:
+    needs: package
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: ["debian:trixie", "ubuntu:26.04"]
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+      - run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y ./omaforge_*_all.deb
+          useradd -m u
+          su u -c "cd /tmp && omaforge --version && QT_QPA_PLATFORM=offscreen OMAFORGE_SELFTEST=1 omaforge"
+
+  test-rpm:
+    needs: package
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+      - run: |
+          dnf -y install ./omaforge-*.noarch.rpm shadow-utils util-linux
+          useradd -m u
+          su u -c "cd /tmp && omaforge --version && QT_QPA_PLATFORM=offscreen OMAFORGE_SELFTEST=1 omaforge"
+
+  publish:
+    needs: [package, test-deb, test-rpm]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cd packaging
-          gh release create "$GITHUB_REF_NAME" omaforge-*.pkg.tar.zst omaforge-*.pkg.tar.zst.sha256 \
-            --repo "$GITHUB_REPOSITORY" --title "omaforge $GITHUB_REF_NAME" --generate-notes \
-            --notes "Install on Arch or Omarchy: \`sudo pacman -U omaforge-${GITHUB_REF_NAME#v}-1-any.pkg.tar.zst\`, then \`omaforge setup omarchy\`."
+          v="${GITHUB_REF_NAME#v}"
+          notes=$(printf '%s\n' \
+            "**Arch / Omarchy:** \`sudo pacman -U omaforge-$v-1-any.pkg.tar.zst\`, then \`omaforge setup omarchy\`." \
+            "" \
+            "**Debian 13+ / Ubuntu 26.04+:** \`sudo apt install ./omaforge_$v-1_all.deb\`" \
+            "" \
+            "**Fedora:** \`sudo dnf install ./omaforge-$v-1.noarch.rpm\`")
+          gh release create "$GITHUB_REF_NAME" omaforge* \
+            --repo "$GITHUB_REPOSITORY" --title "omaforge $GITHUB_REF_NAME" --generate-notes --notes "$notes"

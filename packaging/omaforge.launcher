@@ -1,0 +1,9 @@
+#!/usr/bin/python3
+# Launcher for the .deb and .rpm packages: the code lives in /usr/share/omaforge,
+# so one package works with whichever Python 3 the distribution ships.
+import sys
+
+sys.path.insert(0, "/usr/share/omaforge")
+from omaforge.__main__ import main
+
+sys.exit(main())

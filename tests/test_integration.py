@@ -69,3 +69,13 @@ def test_normalize_keys():
     assert integration.normalize_keys("super + shift+z") == "SUPER + SHIFT + Z"
     with pytest.raises(integration.SetupError):
         integration.normalize_keys("z")
+
+
+def test_setup_refuses_without_omarchy(tmp_path, monkeypatch, capsys):
+    from omaforge import cli
+
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setattr(integration.shutil, "which", lambda name: None)
+    assert cli.main(["setup", "omarchy"]) == 1
+    assert "only applies to Omarchy" in capsys.readouterr().err
+    assert not integration.menu_path(tmp_path).exists()

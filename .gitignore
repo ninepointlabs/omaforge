@@ -10,3 +10,6 @@ packaging/src/
 packaging/pkg/
 packaging/*.tar.gz
 omaforge/_buildkey.py
+packaging/stage/
+packaging/*.deb
+packaging/*.rpm

@@ -329,6 +329,7 @@ def cmd_setup(m, args) -> int:
             print("removed omaforge from the Omarchy menu" if menu else "no menu entry to remove")
             print("removed the omaforge keybinding" if bind else "no keybinding to remove")
             return 0
+        integration.require_omarchy()
         path = integration.install_menu(home)
         print(f"added \"WoW Addons\" to the Omarchy menu ({path})")
         if args.keybind:

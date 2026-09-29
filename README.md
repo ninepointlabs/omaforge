@@ -89,7 +89,8 @@ a repository's releases.
 ![WTF backups with restore](docs/screenshots/backups.png)
 
 **Looks like Omarchy.** omaforge uses the active Omarchy theme's colors and
-font, and re-themes live when you run `omarchy theme set`.
+font, and re-themes live when you run `omarchy theme set`. On other desktops it
+uses a built-in dark theme.
 
 ![omaforge in Tokyo Night, Catppuccin Latte, Gruvbox and Rosé Pine](docs/screenshots/themes.png)
 
@@ -98,8 +99,11 @@ another machine or into another client.
 
 ## Install
 
-On Arch or Omarchy, download the package from the
-[latest release](https://github.com/ninepointlabs/omaforge/releases/latest) and run:
+omaforge is built for Omarchy but runs on any Linux desktop. Packages are
+attached to every
+[release](https://github.com/ninepointlabs/omaforge/releases/latest).
+
+### Omarchy and Arch
 
 ```sh
 sudo pacman -U omaforge-*-any.pkg.tar.zst
@@ -113,9 +117,41 @@ are kept between marker comments in
 `~/.config/omarchy/extensions/omarchy-menu.jsonc` and
 `~/.config/hypr/bindings.lua`, and a backup is written first.
 
+### Debian, Ubuntu and Fedora
+
+On Debian 13 or newer and Ubuntu 26.04 or newer:
+
+```sh
+sudo apt install ./omaforge_*_all.deb
+```
+
+On Fedora:
+
+```sh
+sudo dnf install ./omaforge-*.noarch.rpm
+```
+
+omaforge appears in the app launcher as **Omaforge**. Outside Omarchy it uses
+its own dark theme and your system's monospace font.
+
+### Anywhere else
+
+Any distribution with Python 3.11 or newer, including Ubuntu 24.04, can
+install omaforge with [pipx](https://pipx.pypa.io). PySide6 then comes from
+PyPI:
+
+```sh
+pipx install "omaforge[gui] @ git+https://github.com/ninepointlabs/omaforge"
+```
+
+A pipx install has no app launcher entry or update timer, and no built-in
+CurseForge key (see below).
+
+### CurseForge key and daily updates
+
 Release packages include omaforge's CurseForge API key, so CurseForge works out
-of the box. A package built from source (`cd packaging && makepkg -si`, or the
-AUR) doesn't include it. Add your own key under **Settings**, or in
+of the box. A package built from source (`cd packaging && makepkg -si`, the AUR, or
+pipx) doesn't include it. Add your own key under **Settings**, or in
 `~/.config/omaforge/config.toml`:
 
 ```toml
@@ -242,12 +278,15 @@ uv pip install --python .venv/bin/python pytest
 
 The Release workflow then:
 
-- builds the package in an Arch container, with the CurseForge key from the
-  `CURSEFORGE_API_KEY` repository secret embedded (obfuscated; see
+- builds the Arch package in an Arch container, with the CurseForge key from
+  the `CURSEFORGE_API_KEY` repository secret embedded (obfuscated; see
   `omaforge/buildkey.py`),
 - runs the tests,
-- installs the package and loads the UI from it,
-- attaches the package to a GitHub release.
+- builds the `.deb` and `.rpm` from the same wheel with
+  [nfpm](https://nfpm.goreleaser.com) (`packaging/nfpm.yaml`),
+- installs each package on Arch, Debian 13, Ubuntu 26.04 and Fedora and loads
+  the UI from it,
+- attaches all three packages to a GitHub release.
 
 The key is never committed.
 

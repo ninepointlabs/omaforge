@@ -1,0 +1,69 @@
+# .deb and .rpm packages, built by the release workflow with nfpm
+# (https://nfpm.goreleaser.com) from the same wheel as the Arch package:
+#
+#   python -m zipfile -e dist/omaforge-*.whl packaging/stage
+#   VERSION=0.2.2 nfpm package -f packaging/nfpm.yaml -p deb -t packaging/
+#
+# Targets distributions that ship PySide6 6.8 or newer: Debian 13+,
+# Ubuntu 26.04+ and Fedora.
+name: omaforge
+arch: all
+platform: linux
+version: ${VERSION}
+release: 1
+section: games
+priority: optional
+maintainer: Tim <tim@ninepointlabs.com>
+description: World of Warcraft addon manager (CurseForge, WoWInterface, GitHub)
+homepage: https://github.com/ninepointlabs/omaforge
+license: MIT
+
+contents:
+  - src: ./stage/omaforge
+    dst: /usr/share/omaforge/omaforge
+    type: tree
+  - src: ./omaforge.launcher
+    dst: /usr/bin/omaforge
+    file_info: {mode: 0755}
+  - src: ./omaforge.desktop
+    dst: /usr/share/applications/omaforge.desktop
+  - src: ../omaforge/ui/icons/omaforge.svg
+    dst: /usr/share/icons/hicolor/scalable/apps/omaforge.svg
+  - src: ./omaforge-update.service
+    dst: /usr/lib/systemd/user/omaforge-update.service
+  - src: ./omaforge-update.timer
+    dst: /usr/lib/systemd/user/omaforge-update.timer
+  - src: ../LICENSE
+    dst: /usr/share/licenses/omaforge/LICENSE
+
+overrides:
+  deb:
+    depends:
+      - python3 (>= 3.11)
+      - python3-pyside6.qtcore (>= 6.8)
+      - python3-pyside6.qtgui (>= 6.8)
+      - python3-pyside6.qtqml (>= 6.8)
+      - python3-pyside6.qtquick (>= 6.8)
+      - qml6-module-qtcore
+      - qml6-module-qtquick
+      - qml6-module-qtquick-controls
+      - qml6-module-qtquick-dialogs
+      - qml6-module-qtquick-layouts
+      - qml6-module-qtquick-templates
+      - qml6-module-qtquick-window
+      - qml6-module-qtqml-workerscript
+      - qt6-svg-plugins
+      - xdg-utils
+    recommends:
+      - libnotify-bin
+      - xdg-desktop-portal
+  rpm:
+    depends:
+      - python3 >= 3.11
+      - python3-pyside6 >= 6.8
+      - qt6-qtdeclarative
+      - qt6-qtsvg
+      - xdg-utils
+    recommends:
+      - libnotify
+      - xdg-desktop-portal
