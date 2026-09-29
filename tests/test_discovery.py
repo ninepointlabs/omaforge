@@ -77,9 +77,10 @@ def test_client_without_addons_dir_is_skipped(wow_root):
     assert "_ptr_" not in {c.folder for c in discovery.clients_in_root(wow_root, table)}
 
 
-def test_lutris_prefix_detection(tmp_path, wow_root):
+@pytest.mark.parametrize("games_dir", [".local/share/lutris/games", ".var/app/net.lutris.Lutris/data/lutris/games"])
+def test_lutris_prefix_detection(tmp_path, wow_root, games_dir):
     home = tmp_path / "home"
-    games = home / ".local/share/lutris/games"
+    games = home / games_dir
     games.mkdir(parents=True)
     prefix = wow_root.parents[2]
     (games / "battlenet.yml").write_text(f"game:\n  arch: win64\n  exe: x.exe\n  prefix: {prefix}\nname: Battle.net\n")

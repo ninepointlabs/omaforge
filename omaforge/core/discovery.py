@@ -77,7 +77,9 @@ def _home() -> Path:
 
 def lutris_prefixes(home: Path) -> list[Path]:
     out = []
-    for cfg_dir in (home / ".local/share/lutris/games", home / ".config/lutris/games"):
+    flatpak = home / ".var/app/net.lutris.Lutris"
+    for cfg_dir in (home / ".local/share/lutris/games", home / ".config/lutris/games",
+                    flatpak / "data/lutris/games", flatpak / "config/lutris/games"):
         for yml in sorted(cfg_dir.glob("*.yml")):
             try:
                 text = yml.read_text("utf-8", errors="replace")
