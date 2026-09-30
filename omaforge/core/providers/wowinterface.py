@@ -1,8 +1,11 @@
 """WoWInterface (MMOUI) via its public JSON API. No key needed."""
 
+import html
 import re
 
-from omaforge.core.models import Folder, Release, RemoteAddon
+from omaforge.core.describe import describe
+from omaforge.core.http import HttpError
+from omaforge.core.models import AddonDetails, Folder, Release, RemoteAddon, Screenshot
 from omaforge.core.providers.base import GameContext, Match, Provider, ProviderError
 
 API = "https://api.mmoui.com/v3/game/WOW"
@@ -123,6 +126,34 @@ class WoWInterface(Provider):
         r = self._remote(d, ctx)
         r.summary = (d.get("UIDescription") or "").split("\r\n\r\n")[0][:400]
         return r
+
+    def details(self, addon_id: str, ctx: GameContext) -> AddonDetails:
+        d = self._details(addon_id)
+        try:
+            # Only the file list has the screenshots, supported versions and page link.
+            entry = next((e for e in self._filelist() if str(e.get("UID")) == str(d["UID"])), {})
+        except (ProviderError, HttpError):
+            entry = {}
+        e = {**entry, **d}
+        fmt, text = describe(d.get("UIDescription") or "", "bbcode")
+        images = e.get("UIIMGs") or []
+        thumbs = e.get("UIIMG_Thumbs") or []
+        links = {"Website": e.get("UIFileInfoURL") or ""}
+        if e.get("UIDonationLink"):
+            links["Donate"] = html.unescape(e["UIDonationLink"])
+        versions = []
+        for c in e.get("UICompatibility") or []:
+            label = f"{c.get('name')} ({c.get('version')})" if c.get("name") else str(c.get("version", ""))
+            if label and label not in versions:
+                versions.append(label)
+        return AddonDetails(
+            addon=self._remote(e, ctx),
+            description=text,
+            description_format=fmt,
+            screenshots=[Screenshot(url, thumbs[i] if i < len(thumbs) else url) for i, url in enumerate(images)],
+            links={k: v for k, v in links.items() if v},
+            game_versions=versions,
+        )
 
     def versions(self, addon_id: str, ctx: GameContext) -> list[Release]:
         d = self._details(addon_id)

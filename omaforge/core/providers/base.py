@@ -4,9 +4,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 
+from omaforge.core.describe import describe
 from omaforge.core.flavors import Game
 from omaforge.core.http import Http
-from omaforge.core.models import Folder, Release, RemoteAddon
+from omaforge.core.models import AddonDetails, Folder, Release, RemoteAddon
 
 
 EXPLORE_SORTS = ("popular", "downloads", "updated", "favorites", "name")
@@ -75,6 +76,12 @@ class Provider(ABC):
     @abstractmethod
     def versions(self, addon_id: str, ctx: GameContext) -> list[Release]:
         """Releases usable on this game, newest first."""
+
+    def details(self, addon_id: str, ctx: GameContext) -> AddonDetails:
+        """The description, screenshots and links; sources without more than get_addon() just return that."""
+        a = self.get_addon(addon_id, ctx)
+        fmt, text = describe(a.summary, "text")
+        return AddonDetails(addon=a, description=text, description_format=fmt, links={"Website": a.url} if a.url else {})
 
     def resolve(self, addon_id: str, ctx: GameContext, channel: str = "stable") -> Release | None:
         from omaforge.core.models import channel_allows

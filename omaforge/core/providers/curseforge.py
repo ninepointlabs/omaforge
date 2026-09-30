@@ -11,7 +11,9 @@ import re
 import time
 import urllib.parse
 
-from omaforge.core.models import Folder, Release, RemoteAddon
+from omaforge.core.describe import describe
+from omaforge.core.flavors import parse_version
+from omaforge.core.models import AddonDetails, Folder, Release, RemoteAddon, Screenshot
 from omaforge.core.http import HttpError
 from omaforge.core.providers.base import DistributionDisabled, GameContext, Match, Provider, ProviderError
 from omaforge.core.providers.fingerprint import folder_fingerprint
@@ -116,6 +118,30 @@ class CurseForge(Provider):
 
     def get_addon(self, addon_id: str, ctx: GameContext) -> RemoteAddon:
         return self._remote(self._get(f"/mods/{int(addon_id)}", ttl=3600), ctx)
+
+    def details(self, addon_id: str, ctx: GameContext) -> AddonDetails:
+        m = self._get(f"/mods/{int(addon_id)}", ttl=3600)
+        a = self._remote(m, ctx)
+        try:
+            body = self._get(f"/mods/{int(addon_id)}/description", ttl=3600)
+        except HttpError as e:
+            if e.status != 404:
+                raise
+            body = ""
+        fmt, text = describe(body, "html") if body else describe(a.summary, "text")
+        links = m.get("links") or {}
+        versions = {i["gameVersion"] for i in m.get("latestFilesIndexes", []) if i.get("gameVersion")}
+        return AddonDetails(
+            addon=a,
+            description=text,
+            description_format=fmt,
+            screenshots=[Screenshot(s["url"], s.get("thumbnailUrl") or s["url"], s.get("title") or "")
+                         for s in m.get("screenshots") or [] if s.get("url")],
+            links={label: links[key] for label, key in (("Website", "websiteUrl"), ("Source", "sourceUrl"),
+                                                        ("Issues", "issuesUrl"), ("Wiki", "wikiUrl")) if links.get(key)},
+            game_versions=sorted(versions, key=parse_version, reverse=True),
+            created=_ts(m.get("dateCreated")),
+        )
 
     def versions(self, addon_id: str, ctx: GameContext) -> list[Release]:
         vt = self._version_type(ctx)

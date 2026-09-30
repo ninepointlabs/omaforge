@@ -288,3 +288,65 @@ def test_wago_stub():
 ])
 def test_curseforge_clean_version(raw, clean):
     assert cfmod.clean_version(raw) == clean
+
+
+# --- Details ---------------------------------------------------------------
+
+def test_wowi_details_merge_filelist_and_details():
+    entry = {**FILELIST[1], "UIFileInfoURL": "https://wowi/info11190", "UIIMGs": ["https://i/1.png", "https://i/2.png"],
+             "UIIMG_Thumbs": ["https://i/t1.png"], "UIDonationLink": "https://pay/?a=1&amp;b=2",
+             "UICompatibility": [{"version": "11.2.0", "name": "The War Within"}, {"version": "11.2.0", "name": "The War Within"}]}
+    http = FakeHttp({f"{WOWI}/filelist.json": [entry],
+                     f"{WOWI}/filedetails/11190.json": [{"UID": "11190", "UIName": "Bartender4", "UIVersion": "4.18.0",
+                                                         "UIDescription": "Bars.\r\n[b]Bold[/b]"}]})
+    d = WoWInterface(http, {}).details("11190", ctx())
+    assert (d.addon.name, d.addon.url, d.addon.downloads) == ("Bartender4", "https://wowi/info11190", 500)
+    assert (d.description_format, d.description) == ("html", "Bars.<br><b>Bold</b>")
+    assert [(s.url, s.thumbnail) for s in d.screenshots] == [("https://i/1.png", "https://i/t1.png"),
+                                                              ("https://i/2.png", "https://i/2.png")]
+    assert d.links == {"Website": "https://wowi/info11190", "Donate": "https://pay/?a=1&b=2"}
+    assert d.game_versions == ["The War Within (11.2.0)"]
+
+
+def test_curseforge_details():
+    mod = {"id": 3358, "name": "DBM", "summary": "Boss mods", "dateCreated": "2008-04-29T12:50:26.24Z",
+           "links": {"websiteUrl": "https://cf/dbm", "sourceUrl": "https://github.com/d/d", "wikiUrl": ""},
+           "screenshots": [{"url": "https://m/full.png", "thumbnailUrl": "https://m/thumb.png", "title": "Warnings"}],
+           "latestFilesIndexes": [{"gameVersionTypeId": 517, "gameVersion": "12.0.7", "filename": "DBM-12.zip", "releaseType": 1},
+                                  {"gameVersionTypeId": 517, "gameVersion": "12.1.0", "filename": "DBM-12.zip", "releaseType": 1}]}
+    http = FakeHttp({f"{CF}/mods/3358": {"data": mod},
+                     f"{CF}/mods/3358/description": {"data": "<p>Hello <img src='https://x'></p>"}})
+    d = CurseForge(http, {"api_key": "k"}).details("3358", ctx())
+    assert (d.addon.name, d.description, d.description_format) == ("DBM", "<p>Hello </p>", "html")
+    assert [(s.url, s.thumbnail, s.title) for s in d.screenshots] == [("https://m/full.png", "https://m/thumb.png", "Warnings")]
+    assert d.links == {"Website": "https://cf/dbm", "Source": "https://github.com/d/d"}
+    assert d.game_versions == ["12.1.0", "12.0.7"]
+    assert d.created == 1209473426
+
+    del http.responses[f"{CF}/mods/3358/description"]
+    assert CurseForge(http, {"api_key": "k"}).details("3358", ctx()).description == "Boss mods"
+
+
+def test_github_details_readme():
+    import base64
+
+    responses = {
+        f"{API}/repos/o/r": {"full_name": "o/r", "name": "r", "owner": {"login": "o", "avatar_url": "https://av/o"}, "description": "Desc",
+                             "html_url": "https://github.com/o/r", "homepage": "", "has_issues": True,
+                             "created_at": "2020-01-01T00:00:00Z", "pushed_at": "2020-01-02T00:00:00Z"},
+        f"{API}/repos/o/r/releases?per_page=15": [],
+        f"{API}/repos/o/r/readme": {"encoding": "base64", "download_url": "https://raw/o/r/main/README.md",
+                                    "content": base64.b64encode(b"# R\n![shot](img/a.png)\nText").decode()},
+    }
+    d = GitHub(FakeHttp(responses), {}).details("o/r", ctx())
+    assert (d.description_format, d.description) == ("markdown", "# R\n\nText")
+    assert [s.url for s in d.screenshots] == ["https://raw/o/r/main/img/a.png"]
+    assert d.links == {"Repository": "https://github.com/o/r", "Issues": "https://github.com/o/r/issues"}
+
+    del responses[f"{API}/repos/o/r/readme"]
+    assert GitHub(FakeHttp(responses), {}).details("o/r", ctx()).description == "Desc"
+
+
+def test_details_default_and_stub():
+    with pytest.raises(ProviderUnavailable):
+        Wago(FakeHttp(), {"api_key": ""}).details("1", ctx())

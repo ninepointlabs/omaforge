@@ -207,9 +207,10 @@ ApplicationWindow {
                     onExportRequested: exportDialog.open()
                     onImportRequested: importDialog.open()
                     onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) }
+                    onShowDetails: function (a) { details.show(a) }
                 }
-                ExplorePage { id: explore }
-                SearchPage { id: search }
+                ExplorePage { id: explore; onShowDetails: function (a) { details.show(a) } }
+                SearchPage { id: search; onShowDetails: function (a) { details.show(a) } }
                 BackupsPage { onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) } }
                 SettingsPage { onAddFolderRequested: folderDialog.open() }
             }
@@ -252,6 +253,7 @@ ApplicationWindow {
         anchors.bottomMargin: 40
     }
     Confirm { id: confirm }
+    DetailsPopup { id: details; objectName: "details" }
 
     FileDialog {
         id: exportDialog

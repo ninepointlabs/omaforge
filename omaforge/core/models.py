@@ -97,3 +97,26 @@ class InstalledAddon:
         d["latest"] = self.latest.to_dict() if self.latest else None
         d["update_available"] = self.update_available
         return d
+
+
+@dataclass
+class Screenshot:
+    url: str
+    thumbnail: str = ""
+    title: str = ""
+
+
+@dataclass
+class AddonDetails:
+    """Everything a source says about one addon, for the details view."""
+
+    addon: RemoteAddon
+    description: str = ""
+    description_format: str = "html"  # "html" (a small safe subset) or "markdown"
+    screenshots: list[Screenshot] = field(default_factory=list)
+    links: dict[str, str] = field(default_factory=dict)  # label -> URL: Website, Source, Issues, Wiki, Donate
+    game_versions: list[str] = field(default_factory=list)  # as the source lists them
+    created: int = 0  # unix seconds
+
+    def to_dict(self) -> dict:
+        return asdict(self)

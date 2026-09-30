@@ -8,6 +8,7 @@ ColumnLayout {
     signal exportRequested()
     signal importRequested()
     signal confirm(string title, string message, string confirmText, bool dangerous, var action)
+    signal showDetails(var addon)
 
     property string filter: ""
 
@@ -77,6 +78,7 @@ ColumnLayout {
             height: 58
             color: hover.hovered ? theme.surface : "transparent"
             HoverHandler { id: hover }
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: page.showDetails(row.a) }
 
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border; opacity: 0.5 }
             Rectangle { width: 3; height: parent.height; color: theme.accent; visible: row.canUpdate }

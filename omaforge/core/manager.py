@@ -13,7 +13,7 @@ from omaforge.core import discovery, flavors, install, scan
 from omaforge.core.discovery import Client
 from omaforge.core.flavors import parse_version
 from omaforge.core.http import Http, HttpError
-from omaforge.core.models import CHANNELS, InstalledAddon, Release, RemoteAddon
+from omaforge.core.models import CHANNELS, AddonDetails, InstalledAddon, Release, RemoteAddon
 from omaforge.core.providers import GameContext, Provider, ProviderError, build as build_providers
 from omaforge.core.providers.base import DistributionDisabled
 from omaforge.core.state import State
@@ -336,6 +336,13 @@ class Manager:
         if p is None or not p.available:
             return []
         return p.categories(self.ctx(client))
+
+    def details(self, client: Client, provider: str, addon_id: str) -> AddonDetails:
+        p = self.providers.get(provider)
+        if p is None:
+            raise ManagerError(f"unknown or disabled provider {provider!r}")
+        p.require()
+        return p.details(addon_id, self.ctx(client))
 
     def install(self, client: Client, provider: str, addon_id: str, channel: str | None = None,
                 force: bool = False) -> dict:

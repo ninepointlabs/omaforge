@@ -18,7 +18,17 @@ from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 
 from omaforge import __version__, config as configmod
 from omaforge.buildkey import builtin_curseforge_key
+from omaforge.core.describe import clean_html
 from omaforge.core.manager import Manager
+
+
+def markdown_to_html(text: str) -> str:
+    """Markdown as the same small HTML subset the other sources give (main thread: QTextDocument)."""
+    from PySide6.QtGui import QTextDocument
+
+    doc = QTextDocument()
+    doc.setMarkdown(text)
+    return clean_html(doc.toHtml())
 
 
 def _path(url_or_path: str) -> Path:
@@ -30,6 +40,7 @@ def _path(url_or_path: str) -> Path:
 class Backend(QObject):
     changed = Signal()
     busyChanged = Signal()
+    detailsChanged = Signal()
     toast = Signal(str, str)  # kind (info, error), message
     _done = Signal(object, object, object)  # callback, result, error
 
@@ -52,6 +63,8 @@ class Backend(QObject):
         self._explore_results: list[dict] = []
         self._explore_categories: list[dict] = []
         self._explore_more = False
+        self._details: dict = {}
+        self._details_for = ""  # provider:id the details view is waiting for
         self._done.connect(self._finish)
         self._run(self._load_clients, self._clients_loaded, "Looking for World of Warcraft")
 
@@ -165,6 +178,14 @@ class Backend(QObject):
     @Property(bool, notify=changed)
     def exploreHasMore(self):
         return self._explore_more
+
+    @Property("QVariantMap", notify=detailsChanged)
+    def details(self):
+        return self._details
+
+    @Property(bool, notify=detailsChanged)
+    def detailsLoading(self):
+        return bool(self._details_for) and not self._details
 
     @Property("QVariantMap", notify=changed)
     def settings(self):
@@ -401,6 +422,39 @@ class Backend(QObject):
 
         self._run(lambda: self.m.explore(client, e["provider"], e["sort"], e["category"] or None, offset, 50),
                   then, "Loading more")
+
+    # Details ---------------------------------------------------------------
+    @Slot(str, str)
+    def loadDetails(self, provider: str, addon_id: str) -> None:
+        client = self._client()
+        want = f"{provider}:{addon_id}"
+        self._details_for, self._details = want, {}
+        if client is None:
+            self._details = {"error": "No World of Warcraft client selected"}
+        self.detailsChanged.emit()
+        if client is None:
+            return
+
+        def work():
+            try:
+                return self.m.details(client, provider, addon_id).to_dict()
+            except Exception as e:  # shown in the details view instead of a toast
+                traceback.print_exc()
+                return {"error": str(e)}
+
+        def then(details):
+            if self._details_for == want:
+                if details.get("description_format") == "markdown":
+                    details.update(description=markdown_to_html(details["description"]), description_format="html")
+                self._details = details
+                self.detailsChanged.emit()
+
+        self._run(work, then, "Loading details")
+
+    @Slot()
+    def closeDetails(self) -> None:
+        self._details_for, self._details = "", {}
+        self.detailsChanged.emit()
 
     @Slot(str, str, str)
     def install(self, provider: str, addon_id: str, channel: str) -> None:

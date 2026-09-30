@@ -176,6 +176,12 @@ systemctl --user enable --now omaforge-update.timer
 | <kbd>Ctrl</kbd>+<kbd>F</kbd> | filter installed addons |
 | <kbd>Ctrl</kbd>+<kbd>,</kbd> | settings |
 | <kbd>Ctrl</kbd>+<kbd>Q</kbd> | quit |
+| <kbd>Esc</kbd> | close an addon's details or screenshot |
+
+Click an addon anywhere outside its buttons to see its description,
+screenshots and links from its source. Click a screenshot to see it full size
+and use <kbd>←</kbd> <kbd>→</kbd> to browse. <kbd>Esc</kbd> or a click outside
+closes either view.
 
 Hover over an addon's folder count to see its folders, and over a client in
 the sidebar to see where it lives.

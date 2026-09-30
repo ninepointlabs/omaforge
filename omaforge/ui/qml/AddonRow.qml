@@ -4,15 +4,18 @@ import QtQuick.Layouts
 import "Format.js" as Fmt
 
 // A remote addon in Search or Explore: icon, name, numbers, install.
+// Clicking anywhere but a button asks for its details.
 Rectangle {
     id: row
     required property var modelData
     property int number: 0  // rank shown on the left in Explore; 0 hides it
     readonly property var r: modelData
+    signal detailsRequested()
 
     height: 74
     color: hover.hovered ? theme.surface : "transparent"
     HoverHandler { id: hover }
+    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: row.detailsRequested() }
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border; opacity: 0.5 }
 
     RowLayout {

@@ -6,6 +6,7 @@ import "Format.js" as Fmt
 ColumnLayout {
     id: page
     spacing: 0
+    signal showDetails(var addon)
     property var disabledProviders: ({})
     property string lastQuery: ""
 
@@ -99,7 +100,7 @@ ColumnLayout {
         }
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
-        delegate: AddonRow { width: list.width }
+        delegate: AddonRow { width: list.width; onDetailsRequested: page.showDetails(r) }
 
         Label2 {
             anchors.centerIn: parent

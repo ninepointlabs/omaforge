@@ -1,11 +1,14 @@
 """GitHub releases, using the BigWigs packager's release.json to pick a zip per flavor."""
 
+import base64
 import calendar
 import re
 import time
 import urllib.parse
 
-from omaforge.core.models import Folder, Release, RemoteAddon
+from omaforge.core.describe import describe, markdown_images
+from omaforge.core.http import HttpError
+from omaforge.core.models import AddonDetails, Folder, Release, RemoteAddon, Screenshot
 from omaforge.core.providers.base import GameContext, Match, Provider, ProviderError
 
 API = "https://api.github.com"
@@ -63,6 +66,33 @@ class GitHub(Provider):
             version=latest.version if latest else "",
             updated=latest.date if latest else _ts(r.get("pushed_at")),
             compatible=latest is not None,
+        )
+
+    def details(self, addon_id: str, ctx: GameContext) -> AddonDetails:
+        a = self.get_addon(addon_id, ctx)
+        r = self._api(f"/repos/{a.id}", ttl=3600)
+        try:
+            readme = self._api(f"/repos/{a.id}/readme", ttl=3600)
+        except HttpError as e:
+            if e.status != 404:
+                raise
+            readme = {}
+        text = ""
+        if readme.get("encoding") == "base64":
+            text = base64.b64decode(readme.get("content") or "").decode("utf-8", "replace")
+        fmt, desc = describe(text, "markdown") if text else describe(a.summary, "text")
+        images = markdown_images(text, readme.get("download_url") or f"https://raw.githubusercontent.com/{a.id}/HEAD/")
+        links = {"Repository": r["html_url"], "Website": r.get("homepage") or ""}
+        if r.get("has_issues"):
+            links["Issues"] = f"{r['html_url']}/issues"
+        a.icon = r["owner"].get("avatar_url") or ""
+        return AddonDetails(
+            addon=a,
+            description=desc,
+            description_format=fmt,
+            screenshots=[Screenshot(url, url) for url in images[:12]],
+            links={k: v for k, v in links.items() if v},
+            created=_ts(r.get("created_at")),
         )
 
     def search(self, query: str, ctx: GameContext, limit: int = 30) -> list[RemoteAddon]:

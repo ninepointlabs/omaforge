@@ -6,6 +6,7 @@ import QtQuick.Layouts
 ColumnLayout {
     id: page
     spacing: 0
+    signal showDetails(var addon)
 
     readonly property var sortNames: ({
         "popular": "Most popular", "downloads": "Most downloaded", "updated": "Recently updated",
@@ -84,6 +85,7 @@ ColumnLayout {
             required property int index
             width: list.width
             number: index + 1
+            onDetailsRequested: page.showDetails(r)
         }
         footer: Item {
             width: list.width
