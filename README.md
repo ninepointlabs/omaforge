@@ -6,7 +6,8 @@
 
 <p align="center">
   A World of Warcraft addon manager for <a href="https://omarchy.org">Omarchy</a>.<br>
-  Retail, Classic, Forever and every PTR and beta, running under Wine or Proton.
+  Retail, Classic, Forever and every PTR and beta, running under Wine or Proton.<br>
+  <a href="https://omaforge.ninepointlabs.com">omaforge.ninepointlabs.com</a>
 </p>
 
 <p align="center">

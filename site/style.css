@@ -1,0 +1,782 @@
+/* omaforge.ninepointlabs.com: a World of Warcraft flavored page for omaforge. */
+
+:root {
+  --ink: #0b0806;
+  --stone: #17120d;
+  --stone-2: #211a12;
+  --text: #eadfc8;
+  --dim: #b3a68a;
+  --gold: #ffd100;          /* WoW's header yellow */
+  --gold-2: #e6b54a;
+  --bronze: #8a6526;
+  --bronze-dark: #4a3413;
+  --parch: #ecdcb4;
+  --parch-2: #d8c08c;
+  --parch-ink: #2e1f0e;
+  --tooltip: rgba(6, 8, 22, 0.96);
+  --tip-border: #a9a9b4;
+
+  /* Faction colors; neutral is forge gold and ember. */
+  --accent: #d9731a;
+  --accent-2: #8f3c0b;
+  --accent-glow: rgba(255, 150, 40, 0.35);
+
+  /* Item quality. */
+  --poor: #9d9d9d;
+  --common: #ffffff;
+  --uncommon: #1eff00;
+  --rare: #0070dd;
+  --rare-text: #3d9bff;
+  --epic: #a335ee;
+  --legendary: #ff8000;
+
+  --display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --body: "Crimson Pro", Georgia, serif;
+  --quest: "IM Fell English", "Crimson Pro", Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --cursor: url("assets/ui/gauntlet.png") 2 2;
+  color-scheme: dark;
+}
+
+:root[data-faction="alliance"] {
+  --accent: #2f63d8;
+  --accent-2: #14306e;
+  --accent-glow: rgba(80, 140, 255, 0.35);
+}
+
+:root[data-faction="horde"] {
+  --accent: #c42a1c;
+  --accent-2: #5e0f09;
+  --accent-glow: rgba(255, 60, 40, 0.35);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(255, 170, 60, 0.06), transparent 60%),
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.015) 0 1px, transparent 2px) 0 0 / 7px 7px,
+    var(--ink);
+  color: var(--text);
+  font: 400 1.18rem/1.6 var(--body);
+  cursor: var(--cursor), auto;
+  overflow-x: hidden;
+}
+
+a, button, summary, [tabindex], label { cursor: var(--cursor), pointer; }
+
+a { color: var(--gold-2); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: var(--gold); }
+
+code, kbd, pre { font-family: var(--mono); font-size: 0.82em; }
+code { background: rgba(0, 0, 0, 0.35); padding: 0.08em 0.35em; border-radius: 3px; }
+kbd {
+  display: inline-block;
+  padding: 0.05em 0.45em;
+  border: 1px solid var(--bronze);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: #1c150d;
+  color: var(--gold);
+  font-size: 0.75em;
+}
+
+img { max-width: 100%; }
+
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+/* --- Buttons: the classic red panel button ------------------------------ */
+
+.wow-btn {
+  --b1: #b8190f;
+  --b2: #6a0b05;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.7em 1.6em;
+  border: 1px solid #f2c75c;
+  border-radius: 4px;
+  background: linear-gradient(#e0352a 0%, var(--b1) 38%, var(--b2) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 160, 0.45),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.5),
+    0 0 0 2px #2a1a08,
+    0 3px 10px rgba(0, 0, 0, 0.6);
+  color: var(--gold);
+  font: 700 0.95rem/1 var(--display);
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-shadow: 0 1px 0 #000, 0 0 8px rgba(0, 0, 0, 0.7);
+  transition: filter 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.wow-btn:hover { filter: brightness(1.18) saturate(1.1); color: #fff2a8; }
+.wow-btn:active { transform: translateY(1px); filter: brightness(0.9); }
+.wow-btn.ghost {
+  --b1: #3a2c1c;
+  --b2: #140e07;
+  background: linear-gradient(#57442b 0%, var(--b1) 38%, var(--b2) 100%);
+  border-color: var(--gold-2);
+}
+.wow-btn.small { padding: 0.5em 1.1em; font-size: 0.8rem; }
+button.wow-btn { font-family: var(--display); }
+
+/* --- Top bar -------------------------------------------------------------- */
+
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 60px;
+  padding: 0 24px;
+  background: linear-gradient(rgba(12, 9, 6, 0.95), rgba(12, 9, 6, 0.82));
+  border-bottom: 1px solid var(--bronze);
+  box-shadow: 0 1px 0 #000, 0 6px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+}
+.topbar::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -3px 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.8;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--gold);
+  font: 700 1.25rem var(--display);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+.nav { display: flex; gap: 22px; margin-left: auto; }
+.nav a {
+  color: var(--dim);
+  font: 500 0.85rem var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.nav a:hover { color: var(--gold); }
+
+.faction { display: flex; gap: 6px; }
+.faction button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--bronze-dark);
+  border-radius: 50%;
+  background: radial-gradient(circle, #2a2016, #0e0a06);
+  opacity: 0.55;
+  filter: grayscale(0.7);
+  transition: opacity 0.2s, filter 0.2s, box-shadow 0.2s;
+}
+.faction button img { width: 22px; height: auto; }
+.faction button:hover, .faction button[aria-pressed="true"] { opacity: 1; filter: none; }
+.faction button[aria-pressed="true"] { border-color: var(--gold-2); box-shadow: 0 0 12px var(--accent-glow); }
+
+/* --- Hero: the loading screen -------------------------------------------- */
+
+.hero {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+  padding: 110px 20px 150px;
+  overflow: hidden;
+  text-align: center;
+  isolation: isolate;
+}
+.hero-art {
+  position: absolute;
+  inset: -3%;
+  z-index: -2;
+  background: url("assets/art/loading-painting.webp") center 40% / cover no-repeat;
+  animation: drift 40s ease-in-out infinite alternate;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(8, 6, 4, 0.25) 0%, rgba(8, 6, 4, 0.55) 55%, rgba(8, 6, 4, 0.9) 100%),
+    linear-gradient(rgba(11, 8, 6, 0.3), rgba(11, 8, 6, 0) 30%, rgba(11, 8, 6, 0.2) 60%, var(--ink) 100%);
+}
+@keyframes drift {
+  from { transform: scale(1.02) translate(0, 0); }
+  to { transform: scale(1.1) translate(-1.5%, 1%); }
+}
+
+.hero-inner { max-width: 860px; }
+.kicker {
+  margin: 0 0 0.4em;
+  color: var(--parch);
+  font: 500 clamp(0.8rem, 1.6vw, 1rem) var(--display);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px #000;
+}
+.title {
+  margin: 0;
+  font: 900 clamp(2.6rem, 12.5vw, 10.5rem)/0.95 var(--display);
+  letter-spacing: 0.02em;
+  background: linear-gradient(180deg, #fff6c2 0%, #ffd94a 30%, #e9a520 55%, #9a6212 78%, #f6c555 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+  padding: 0 0.08em 0.04em;
+  filter: drop-shadow(0 4px 0 #2a1604) drop-shadow(0 10px 24px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 30px var(--accent-glow));
+}
+.lede {
+  max-width: 640px;
+  margin: 1.1em auto 1.6em;
+  color: #f4ead3;
+  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+  text-shadow: 0 2px 10px #000, 0 0 2px #000;
+}
+.cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+.meta { margin-top: 1.4em; color: var(--dim); font-size: 0.95rem; text-shadow: 0 1px 4px #000; }
+
+.loading {
+  position: absolute;
+  inset: auto 0 34px 0;
+  width: min(900px, calc(100% - 40px));
+  margin: 0 auto;
+}
+.loading-tip {
+  min-height: 3.2em;
+  margin: 0 0 12px;
+  color: var(--parch);
+  font-size: 1.02rem;
+  text-shadow: 0 1px 4px #000, 0 0 2px #000;
+  transition: opacity 0.4s;
+}
+.loading-tip b { color: var(--gold); font-family: var(--display); letter-spacing: 0.05em; }
+.loading-tip.fade { opacity: 0; }
+.loading-bar {
+  height: 18px;
+  padding: 3px;
+  border: 1px solid var(--gold-2);
+  border-radius: 2px;
+  background: #050403;
+  box-shadow: 0 0 0 2px #2a1a08, 0 0 0 3px var(--bronze), 0 4px 16px rgba(0, 0, 0, 0.8);
+}
+.loading-fill {
+  height: 100%;
+  width: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 50%, rgba(0, 0, 0, 0.25)),
+    linear-gradient(90deg, var(--accent-2), var(--accent));
+  box-shadow: 0 0 10px var(--accent-glow);
+  animation: load 3.6s cubic-bezier(0.3, 0.1, 0.2, 1) 0.4s forwards;
+}
+@keyframes load { to { width: 100%; } }
+
+/* --- Sections ------------------------------------------------------------- */
+
+.section { position: relative; padding: 96px 20px; }
+.section-head { max-width: 760px; margin: 0 auto 44px; text-align: center; }
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 0;
+  color: var(--gold);
+  font: 700 clamp(1.8rem, 4.4vw, 2.8rem)/1.1 var(--display);
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 0 #2a1604, 0 0 22px rgba(255, 190, 60, 0.25);
+}
+.heading::before, .heading::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-2));
+  mask: linear-gradient(90deg, transparent, #000);
+}
+.heading::after { transform: scaleX(-1); }
+.sub { margin: 0.6em 0 0; color: var(--dim); font-style: italic; }
+
+.cinematic {
+  background:
+    linear-gradient(var(--ink), rgba(11, 8, 6, 0.7) 22%, rgba(11, 8, 6, 0.7) 78%, var(--ink)),
+    url("assets/art/forest-gate.webp") center / cover;
+}
+
+.ornate {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 10px;
+  background: linear-gradient(135deg, #6b4a17, #e7c068 25%, #7a5418 50%, #f0cf7a 75%, #6b4a17);
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px #1a1005, 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 60px var(--accent-glow);
+}
+.ornate::before, .ornate::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  background: linear-gradient(135deg, #fff1b3, #c48a22);
+  border: 2px solid #1a1005;
+  transform: rotate(45deg);
+}
+.ornate::before { left: -12px; }
+.ornate::after { right: -12px; }
+.ornate video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border: 2px solid #1a1005;
+}
+
+/* --- Quest log ------------------------------------------------------------ */
+
+.quests {
+  background:
+    linear-gradient(var(--ink), rgba(11, 8, 6, 0.76) 20%, rgba(11, 8, 6, 0.76) 80%, var(--ink)),
+    url("assets/art/mountain-lighthouse.webp") center / cover;
+}
+
+.questlog {
+  max-width: 1180px;
+  margin: 0 auto;
+  border: 2px solid var(--bronze);
+  border-radius: 6px;
+  background: linear-gradient(#20180f, #120d08);
+  box-shadow: 0 0 0 2px #0a0704, inset 0 0 0 1px rgba(255, 210, 120, 0.15), 0 24px 70px rgba(0, 0, 0, 0.75);
+}
+.ql-bar, .loot-bar, .gossip-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px;
+  background: linear-gradient(#3b2a15, #1d140a);
+  border-bottom: 1px solid var(--bronze);
+  color: var(--gold);
+  font: 700 1rem var(--display);
+  letter-spacing: 0.08em;
+}
+.ql-count, .loot-from { color: var(--dim); font: 400 0.95rem var(--body); letter-spacing: 0; }
+
+.ql-body { display: grid; grid-template-columns: 330px 1fr; min-height: 640px; }
+
+.ql-list {
+  margin: 0;
+  padding: 12px 0;
+  list-style: none;
+  border-right: 1px solid var(--bronze-dark);
+  background: rgba(0, 0, 0, 0.25);
+}
+.ql-zone {
+  margin: 12px 18px 4px;
+  color: var(--dim);
+  font: 700 0.78rem var(--display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.ql-zone::before { content: "− "; color: var(--gold-2); }
+.ql-list button {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 18px 7px 30px;
+  border: 0;
+  background: none;
+  color: var(--lvl, #ffd100);
+  font: 400 1.08rem/1.3 var(--body);
+  text-align: left;
+}
+.ql-list button:hover { background: rgba(255, 210, 120, 0.07); }
+.ql-list button[aria-selected="true"] {
+  background: linear-gradient(90deg, rgba(255, 210, 120, 0.18), transparent);
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+.ql-list .lvl { flex: none; width: 2.6em; font-family: var(--mono); font-size: 0.78rem; opacity: 0.85; }
+.ql-list .done-mark { margin-left: auto; color: var(--uncommon); font-size: 0.8rem; }
+.ql-list .new-mark {
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--legendary);
+  color: #1a0d00;
+  font: 700 0.62rem/1.6 var(--display);
+  letter-spacing: 0.08em;
+}
+
+/* WoW difficulty colors by level. */
+.lvl-green { --lvl: #40c040; }
+.lvl-yellow { --lvl: #ffd100; }
+.lvl-orange { --lvl: #ff8040; }
+.lvl-red { --lvl: #ff4a3a; }
+
+.ql-pages { position: relative; }
+
+.parchment, .quest {
+  color: var(--parch-ink);
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.35), transparent 60%),
+    radial-gradient(ellipse at 80% 90%, rgba(120, 80, 20, 0.25), transparent 55%),
+    radial-gradient(circle at 60% 40%, rgba(90, 60, 20, 0.06) 0 1px, transparent 2px) 0 0 / 5px 5px,
+    linear-gradient(135deg, var(--parch), var(--parch-2));
+  box-shadow: inset 0 0 60px rgba(90, 55, 10, 0.45), inset 0 0 6px rgba(60, 35, 5, 0.5);
+}
+
+.quest { padding: 30px 38px 36px; font-family: var(--quest); font-size: 1.14rem; }
+.js .quest:not(.active) { display: none; }
+.js .quest.active { animation: unroll 0.35s ease-out; }
+@keyframes unroll { from { opacity: 0; transform: translateY(6px); } }
+.quest h3 {
+  margin: 0 0 0.5em;
+  color: #1c1004;
+  font: 700 1.7rem/1.15 var(--display);
+}
+.quest h4 {
+  margin: 1.3em 0 0.4em;
+  color: #1c1004;
+  font: 700 1.08rem var(--display);
+  letter-spacing: 0.04em;
+}
+.quest p { margin: 0; }
+.quest code { background: rgba(80, 50, 10, 0.14); color: #3a2208; }
+.quest kbd { color: #3a2208; background: rgba(255, 255, 255, 0.35); border-color: #8c6b35; }
+.objectives { margin: 0; padding: 0; list-style: none; }
+.objectives li { position: relative; padding-left: 1.5em; }
+.objectives li::before { content: "◆"; position: absolute; left: 0.15em; color: #6d4a15; font-size: 0.7em; top: 0.35em; }
+.quest.completed .objectives li::before { content: "✓"; color: #1b7a13; font-size: 0.95em; top: 0; }
+
+.rewards { display: flex; flex-wrap: wrap; gap: 12px; }
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 16px 4px 4px;
+  border: 1px solid rgba(60, 35, 5, 0.35);
+  border-radius: 4px;
+  background: rgba(40, 25, 5, 0.12);
+}
+.item img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--qc, #777);
+  border-radius: 4px;
+  box-shadow: 0 0 6px var(--qc, transparent);
+}
+.item-name { color: var(--qt, #333); font: 600 1.05rem var(--body); }
+.item[data-quality="uncommon"] { --qc: #1eff00; --qt: #177a09; }
+.item[data-quality="rare"] { --qc: var(--rare); --qt: #0a4fa6; }
+.item[data-quality="epic"] { --qc: var(--epic); --qt: #6c1fa6; }
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  width: max-content;
+  max-width: 300px;
+  padding: 10px 12px;
+  border: 1px solid var(--tip-border);
+  border-radius: 5px;
+  background: var(--tooltip);
+  box-shadow: 0 0 0 1px #000, 0 8px 24px rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font: 400 0.95rem/1.35 var(--body);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+  pointer-events: none;
+}
+.tooltip b { font-size: 1.05rem; }
+.tooltip .use { color: var(--uncommon); }
+.tooltip i { color: var(--gold); }
+.item:hover .tooltip, .item:focus .tooltip, .item:focus-within .tooltip { opacity: 1; visibility: visible; transform: none; }
+
+.q-uncommon { color: var(--uncommon); }
+.q-rare { color: var(--rare-text); }
+.q-epic { color: #c07bff; }
+.q-legendary { color: var(--legendary); }
+
+.shot { margin: 26px 0 0; }
+.shot button {
+  display: block;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #6d4a15;
+  border-radius: 4px;
+  background: rgba(40, 25, 5, 0.25);
+  box-shadow: 0 6px 18px rgba(60, 35, 5, 0.35);
+}
+.shot img { display: block; width: 100%; height: auto; border-radius: 2px; }
+.shot button:hover { border-color: #3a2208; }
+
+.scroll {
+  margin: 14px 0 0;
+  padding: 16px 18px;
+  overflow-x: auto;
+  border: 1px solid #6d4a15;
+  border-radius: 4px;
+  background: #1a130b;
+  color: #f1e3c0;
+  line-height: 1.55;
+}
+.scroll code { background: none; padding: 0; color: inherit; font-size: 0.85rem; }
+.scroll .c { color: #9b8a66; }
+
+.ql-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--bronze-dark);
+  background: linear-gradient(#1d140a, #120d08);
+}
+html:not(.js) .ql-foot { display: none; }
+
+/* --- Loot window ---------------------------------------------------------- */
+
+.loot-section {
+  background:
+    linear-gradient(var(--ink), rgba(11, 8, 6, 0.72) 20%, rgba(11, 8, 6, 0.72) 80%, var(--ink)),
+    url("assets/art/orc-camp.webp") center / cover;
+}
+.loot {
+  max-width: 920px;
+  margin: 0 auto;
+  border: 2px solid var(--bronze);
+  border-radius: 6px;
+  background: linear-gradient(#1a130b, #0d0906);
+  box-shadow: 0 0 0 2px #0a0704, 0 24px 70px rgba(0, 0, 0, 0.75);
+}
+.loot-item {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 18px;
+  border-bottom: 1px solid rgba(138, 101, 38, 0.3);
+}
+.loot-item:last-child { border-bottom: 0; }
+.loot-item:hover { background: rgba(255, 210, 120, 0.04); }
+.loot-item > img {
+  width: 56px;
+  height: 56px;
+  border: 2px solid var(--qc);
+  border-radius: 6px;
+  box-shadow: 0 0 12px var(--qc), inset 0 0 8px rgba(0, 0, 0, 0.6);
+}
+.loot-item[data-quality="legendary"] { --qc: var(--legendary); }
+.loot-item[data-quality="epic"] { --qc: var(--epic); }
+.loot-item[data-quality="rare"] { --qc: var(--rare); }
+.loot-item[data-quality="uncommon"] { --qc: #1eaa00; }
+.loot-item[data-quality="legendary"] > img { animation: shimmer 2.6s ease-in-out infinite; }
+@keyframes shimmer { 50% { box-shadow: 0 0 22px var(--legendary), 0 0 4px #fff; } }
+.loot-text { display: grid; gap: 2px; min-width: 0; }
+.loot-text b { font: 700 1.2rem var(--display); letter-spacing: 0.02em; }
+.loot-text > span { color: var(--dim); font-size: 0.98rem; }
+.loot-text pre {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border: 1px solid rgba(138, 101, 38, 0.45);
+  border-radius: 4px;
+  background: #070504;
+  color: #f1e3c0;
+}
+.loot-text pre code { background: none; padding: 0; font-size: 0.82rem; }
+.loot-actions { display: flex; flex-direction: column; gap: 8px; }
+.loot-note { max-width: 920px; margin: 18px auto 0; color: var(--dim); text-align: center; font-style: italic; }
+
+/* --- Tavern gossip -------------------------------------------------------- */
+
+.tavern {
+  background:
+    linear-gradient(var(--ink), rgba(11, 8, 6, 0.76) 20%, rgba(11, 8, 6, 0.76) 80%, var(--ink)),
+    url("assets/art/floating-isles.webp") center / cover;
+}
+.gossip {
+  max-width: 820px;
+  margin: 0 auto;
+  border: 2px solid var(--bronze);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px #0a0704, 0 24px 70px rgba(0, 0, 0, 0.75);
+}
+.gossip-bar { justify-content: flex-start; }
+.gossip-bar img { border: 1px solid var(--bronze); border-radius: 50%; }
+.gossip-body { padding: 26px 34px 30px; font-family: var(--quest); font-size: 1.14rem; }
+.greeting { margin: 0 0 1em; }
+.gossip details { border-top: 1px solid rgba(90, 60, 20, 0.25); }
+.gossip summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  color: #1c1004;
+  list-style: none;
+  font-weight: 400;
+}
+.gossip summary::-webkit-details-marker { display: none; }
+.gossip summary::before {
+  /* The gossip speech bubble. */
+  content: "";
+  flex: none;
+  width: 18px;
+  height: 14px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 35% 30%, #fff6d8, #f2e2b4 55%, #b58f4c);
+  border: 1px solid #5b3d12;
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.25);
+}
+.gossip summary:hover { color: #7a2a00; }
+.gossip details[open] summary { color: #7a2a00; }
+.gossip details p { margin: 0 0 14px 32px; }
+.gossip code { background: rgba(80, 50, 10, 0.14); color: #3a2208; }
+.gossip a { color: #6b2a00; }
+.gossip-bye {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px 0;
+  border-top: 1px solid rgba(90, 60, 20, 0.25);
+  color: #1c1004;
+  text-decoration: none;
+}
+.gossip-bye::before { content: "◀"; color: #5b3d12; font-size: 0.8em; width: 18px; text-align: center; }
+
+/* --- Footer --------------------------------------------------------------- */
+
+.footer {
+  padding: 60px 20px 50px;
+  border-top: 1px solid var(--bronze-dark);
+  background: linear-gradient(#0b0806, #050403);
+  text-align: center;
+}
+.crests { display: flex; justify-content: center; align-items: center; gap: 22px; margin-bottom: 20px; }
+.crests img { height: auto; opacity: 0.9; }
+.footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px; margin-bottom: 20px; }
+.footer-links a { font: 500 0.85rem var(--display); letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; }
+.legal { max-width: 720px; margin: 0 auto; color: #7d7260; font-size: 0.88rem; line-height: 1.5; }
+
+/* --- Toasts, zone text, lightbox ------------------------------------------ */
+
+.toasts {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 40;
+  display: grid;
+  gap: 10px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.toast {
+  display: grid;
+  grid-template-columns: 52px 1fr 44px;
+  align-items: center;
+  gap: 14px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border: 2px solid var(--gold-2);
+  border-radius: 8px;
+  background: linear-gradient(#2a1f12, #0f0a05);
+  box-shadow: 0 0 0 2px #0a0704, 0 0 24px rgba(255, 200, 80, 0.35), 0 10px 30px rgba(0, 0, 0, 0.8);
+  animation: toast-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1), toast-out 0.6s ease-in 4.4s forwards;
+}
+.toast img { width: 52px; height: 52px; border: 2px solid var(--bronze); border-radius: 6px; object-fit: contain; background: #0a0704; }
+.toast small { display: block; color: var(--gold); font: 700 0.72rem var(--display); letter-spacing: 0.16em; text-transform: uppercase; }
+.toast strong { display: block; color: #fff; font: 700 1.05rem/1.2 var(--display); }
+.toast span { display: block; color: var(--dim); font-size: 0.9rem; line-height: 1.25; }
+.toast .points {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 46px;
+  background: linear-gradient(#f3d27a, #9a6c1c);
+  clip-path: polygon(50% 0, 100% 18%, 100% 62%, 50% 100%, 0 62%, 0 18%);
+  color: #2a1604;
+  font: 900 1rem var(--display);
+}
+@keyframes toast-in { from { opacity: 0; transform: translateY(30px) scale(0.9); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(-10px); } }
+
+.zone-text {
+  position: fixed;
+  top: 22%;
+  left: 0;
+  right: 0;
+  z-index: 35;
+  margin: 0;
+  color: var(--gold);
+  font: 700 clamp(1.4rem, 3.6vw, 2.3rem) var(--display);
+  text-align: center;
+  text-shadow: 0 2px 0 #000, 0 0 18px #000, 0 0 3px #000;
+  pointer-events: none;
+  opacity: 0;
+}
+.zone-text.show { animation: zone 2.6s ease-out forwards; }
+@keyframes zone { 12% { opacity: 1; } 70% { opacity: 1; } to { opacity: 0; } }
+
+.lightbox {
+  max-width: min(96vw, 1700px);
+  max-height: 94vh;
+  padding: 8px;
+  border: 2px solid var(--gold-2);
+  border-radius: 4px;
+  background: #0b0806;
+  color: var(--dim);
+  text-align: center;
+}
+.lightbox::backdrop { background: rgba(0, 0, 0, 0.85); }
+.lightbox img { display: block; max-width: 100%; max-height: calc(94vh - 56px); margin: 0 auto; }
+.lightbox p { margin: 6px 0 0; font-size: 0.85rem; }
+
+/* --- Small screens -------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .faction { margin-left: auto; }
+  .ql-body { grid-template-columns: 1fr; min-height: 0; }
+  .ql-list { max-height: 260px; overflow-y: auto; border-right: 0; border-bottom: 1px solid var(--bronze-dark); }
+  .quest, .gossip-body { padding: 22px 18px 26px; }
+  .loot-item { grid-template-columns: 48px 1fr; }
+  .loot-item > img { width: 48px; height: 48px; }
+  .loot-actions { grid-column: 1 / -1; flex-direction: row; }
+  .section { padding: 72px 16px; }
+  .topbar { padding: 0 16px; }
+}
+
+@media (max-width: 520px) {
+  .hero { padding-bottom: 170px; }
+  .loading-tip { font-size: 0.95rem; }
+  .ornate::before, .ornate::after { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hero-art, .loot-item[data-quality="legendary"] > img { animation: none; }
+  .loading-fill { animation: none; width: 100%; }
+  .js .quest.active, .toast { animation: none; }
+  .zone-text.show { animation: none; opacity: 1; }
+}

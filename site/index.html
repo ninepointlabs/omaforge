@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en" data-faction="neutral">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>omaforge · World of Warcraft addons on Linux</title>
+  <meta name="description" content="omaforge is a free World of Warcraft addon manager for Linux and Omarchy. Retail, Classic and Forever under Wine or Proton: found, installed and kept current from CurseForge, WoWInterface and GitHub.">
+  <meta name="theme-color" content="#0b0806">
+  <link rel="icon" href="assets/ui/omaforge.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://omaforge.ninepointlabs.com/">
+  <meta property="og:title" content="omaforge · World of Warcraft addons on Linux">
+  <meta property="og:description" content="Retail, Classic and Forever under Wine or Proton: found, installed and kept current from CurseForge, WoWInterface and GitHub.">
+  <meta property="og:image" content="https://omaforge.ninepointlabs.com/assets/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=IM+Fell+English:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="preload" as="image" href="assets/art/loading-painting.webp">
+  <link rel="stylesheet" href="style.css">
+  <script>document.documentElement.classList.add("js")</script>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#top" aria-label="omaforge, back to top">
+    <img src="assets/ui/omaforge.svg" alt="" width="26" height="26">
+    <span>omaforge</span>
+  </a>
+  <nav class="nav" aria-label="Sections">
+    <a href="#cinematic">Cinematic</a>
+    <a href="#quests">Quests</a>
+    <a href="#loot">Loot</a>
+    <a href="#tavern">Tavern</a>
+    <a href="https://github.com/ninepointlabs/omaforge">GitHub</a>
+  </nav>
+  <div class="faction" role="group" aria-label="Choose your faction">
+    <button type="button" data-pick="alliance" aria-pressed="false" title="For the Alliance!">
+      <img src="assets/art/alliance-crest.webp" alt="Alliance" width="28" height="35">
+    </button>
+    <button type="button" data-pick="horde" aria-pressed="false" title="For the Horde!">
+      <img src="assets/art/horde-sigil.webp" alt="Horde" width="28" height="35">
+    </button>
+  </div>
+</header>
+
+<main>
+
+<section class="hero" id="top">
+  <div class="hero-art" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <p class="kicker">A World of Warcraft addon manager for Linux</p>
+    <h1 class="title">omaforge</h1>
+    <p class="lede">
+      Retail, Classic and <em>Forever</em>, under Wine or Proton. Your addons from
+      CurseForge, WoWInterface and GitHub, found, installed and kept current in one
+      native window that wears your Omarchy theme.
+    </p>
+    <div class="cta">
+      <a class="wow-btn" href="#loot">Claim your loot</a>
+      <a class="wow-btn ghost" href="#cinematic"><span aria-hidden="true">▶</span> Watch the cinematic</a>
+    </div>
+    <p class="meta">Free and open source · MIT · <span data-version>v0.2.4</span></p>
+  </div>
+  <div class="loading" aria-hidden="true">
+    <p class="loading-tip"><b>Tip:</b> <span id="tip">omaforge backs up your WTF folder before every bulk update.</span></p>
+    <div class="loading-bar"><div class="loading-fill"></div></div>
+  </div>
+</section>
+
+<section class="section cinematic" id="cinematic">
+  <div class="section-head">
+    <h2 class="heading">The Cinematic</h2>
+    <p class="sub">Thirty seconds, no Wine prefix spelunking.</p>
+  </div>
+  <div class="ornate">
+    <video id="trailer" controls preload="metadata" playsinline
+           poster="assets/video/omaforge-promo-poster.webp">
+      <source src="assets/video/omaforge-promo.mp4" type="video/mp4">
+      <a href="assets/video/omaforge-promo.mp4">Download the omaforge video</a>
+    </video>
+  </div>
+</section>
+
+<section class="section quests" id="quests">
+  <div class="section-head">
+    <h2 class="heading">Quest Log</h2>
+    <p class="sub">Everything omaforge does for you, one quest at a time.</p>
+  </div>
+
+  <div class="questlog">
+    <div class="ql-bar">
+      <span class="ql-name">Quest Log</span>
+      <span class="ql-count"><span id="ql-done">0</span>/9 accepted</span>
+    </div>
+    <div class="ql-body">
+      <ol class="ql-list" id="ql-list" aria-label="Quests"></ol>
+
+      <div class="ql-pages">
+
+        <article class="quest" id="q-clients" data-zone="Wine Prefixes" data-level="10">
+          <h3>Every Client, Found for You</h3>
+          <p>Your World of Warcraft installs are scattered across the land: in Lutris, in
+            Steam's Proton prefixes, in Bottles and Heroic, in a lonely <code>~/.wine</code>.
+            omaforge seeks them all out, and every client folder it finds becomes its own
+            entry: Retail, PTR, xPTR, beta, Classic Era, progression Classic, anniversary
+            realms and World of Warcraft: Forever.</p>
+          <h4>Objectives</h4>
+          <ul class="objectives">
+            <li>Scan Lutris, Steam/Proton, Bottles, Heroic and <code>~/.wine</code></li>
+            <li>List each client folder on its own</li>
+            <li>Add any other folder by hand</li>
+          </ul>
+          <h4>Rewards</h4>
+          <div class="rewards">
+            <div class="item" tabindex="0" data-quality="rare">
+              <img src="assets/icons/inv_misc_spyglass_03.jpg" alt="" width="40" height="40">
+              <span class="item-name">Spyglass of the Far Prefix</span>
+              <div class="tooltip" role="tooltip">
+                <b class="q-rare">Spyglass of the Far Prefix</b>
+                <span>Binds when installed</span>
+                <span class="use">Use: Scans every Wine prefix for World of Warcraft.</span>
+                <i>"It even found the one in ~/Games you forgot about."</i>
+              </div>
+            </div>
+          </div>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/installed.webp" alt="omaforge listing the installed addons of a Retail client" loading="lazy" width="1600" height="1030"></button></figure>
+        </article>
+
+        <article class="quest" id="q-known" data-zone="Wine Prefixes" data-level="12">
+          <h3>Know What You Already Have</h3>
+          <p>Some addons you dragged in by hand, others came from another manager. omaforge
+            recognizes them all without reinstalling a thing, and anything it can't place is
+            listed as <em>unknown</em>, never hidden.</p>
+          <h4>Objectives</h4>
+          <ul class="objectives">
+            <li>Match folders to their exact CurseForge file by fingerprint</li>
+            <li>Follow TOC headers: <code>X-Curse-Project-ID</code>, <code>X-WoWI-ID</code>, <code>X-Wago-ID</code></li>
+            <li>Show DBM, BigWigs, ElvUI and WeakAuras as one entry each</li>
+            <li>Uninstall every folder of an addon at once</li>
+          </ul>
+          <h4>Rewards</h4>
+          <div class="rewards">
+            <div class="item" tabindex="0" data-quality="epic">
+              <img src="assets/icons/inv_misc_book_09.jpg" alt="" width="40" height="40">
+              <span class="item-name">Ledger of Fingerprints</span>
+              <div class="tooltip" role="tooltip">
+                <b class="q-epic">Ledger of Fingerprints</b>
+                <span>Unique</span>
+                <span class="use">Use: Names the exact file an addon folder came from.</span>
+                <i>"Every folder has a story."</i>
+              </div>
+            </div>
+          </div>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/installed.webp" alt="Installed addons, each linked to its source" loading="lazy" width="1600" height="1030"></button></figure>
+        </article>
+
+        <article class="quest" id="q-explore" data-zone="The Addon Bazaar" data-level="20">
+          <h3>Finds the Good Stuff</h3>
+          <p>Explore ranks the top addons for the game you have selected, with icons, download
+            counts and categories. Each game version gets its own list, so Forever shows Forever
+            addons. Neither site publishes star ratings, so omaforge shows the closest signals
+            they do.</p>
+          <h4>Objectives</h4>
+          <ul class="objectives">
+            <li>Rank CurseForge by popularity, total downloads or recent updates</li>
+            <li>Filter CurseForge by category</li>
+            <li>Rank WoWInterface by downloads this month, favorites or recent updates</li>
+          </ul>
+          <h4>Rewards</h4>
+          <div class="rewards">
+            <div class="item" tabindex="0" data-quality="uncommon">
+              <img src="assets/icons/inv_misc_map_01.jpg" alt="" width="40" height="40">
+              <span class="item-name">Map of Popular Addons</span>
+              <div class="tooltip" role="tooltip">
+                <b class="q-uncommon">Map of Popular Addons</b>
+                <span>Binds when installed</span>
+                <span class="use">Use: Reveals the most popular addons for your game version.</span>
+              </div>
+            </div>
+          </div>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/explore.webp" alt="Explore: the most popular Retail addons on CurseForge" loading="lazy" width="1600" height="1030"></button></figure>
+        </article>
+
+        <article class="quest" id="q-search" data-zone="The Addon Bazaar" data-level="22">
+          <h3>Seek Across Three Realms</h3>
+          <p>Search CurseForge, WoWInterface and GitHub at once, then sort by downloads,
+            popularity, favorites, recent updates or name. Paste a GitHub URL to install
+            straight from a repository's releases.</p>
+          <h4>Objectives</h4>
+          <ul class="objectives">
+            <li>Search every source at once with <kbd>Ctrl</kbd>+<kbd>K</kbd></li>
+            <li>Sort the results by what matters to you</li>
+            <li>Install from a GitHub URL</li>
+          </ul>
+          <h4>Rewards</h4>
+          <div class="rewards">
+            <div class="item" tabindex="0" data-quality="rare">
+              <img src="assets/icons/inv_misc_enggizmos_27.jpg" alt="" width="40" height="40">
+              <span class="item-name">Far-Seeing Gizmo</span>
+              <div class="tooltip" role="tooltip">
+                <b class="q-rare">Far-Seeing Gizmo</b>
+                <span>Requires Engineering (1)</span>
+                <span class="use">Use: Searches three addon sites at once.</span>
+                <i>"Gnomish engineering. It only exploded twice."</i>
+              </div>
+            </div>
+          </div>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/search.webp" alt="Search results for WeakAuras, sorted by downloads" loading="lazy" width="1600" height="1030"></button></figure>
+        </article>
+
+        <article class="quest" id="q-details" data-zone="The Addon Bazaar" data-level="24" data-new>
+          <h3>See Before You Install</h3>
+          <p>Click any addon to open its details: the full description, screenshots and links
+            from its source. Click a screenshot to see it full size and browse with the arrow
+            keys. <kbd>Esc</kbd>, or a click outside, sends it away.</p>
+          <h4>Objectives</h4>
+          <ul class="objectives">
+            <li>Read an addon's description before you install it</li>
+            <li>Browse its screenshots full size</li>
+            <li>Open its website, source, issues or wiki</li>
+          </ul>
+          <h4>Rewards</h4>
+          <div class="rewards">
+            <div class="item" tabindex="0" data-quality="epic">
+              <img src="assets/icons/spell_holy_magicalsentry.jpg" alt="" width="40" height="40">
+              <span class="item-name">Scroll of True Seeing</span>
+              <div class="tooltip" role="tooltip">
+                <b class="q-epic">Scroll of True Seeing</b>
+                <span>New in 0.2.4</span>
+                <span class="use">Use: Reveals an addon's description, screenshots and links.</span>
+              </div>
+            </div>
+          </div>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/details.webp" alt="The details window for Deadly Boss Mods, with its screenshots and description" loading="lazy" width="1600" height="1030"></button></figure>
+        </article>
+
+        <article class="quest" id="q-updates" data-zone="Keeping It Current" data-level="30">
+          <h3>Updates Without Surprises</h3>
+          <p>Each download is unpacked next to <code>AddOns</code>, then swapped in with atomic
+            renames. If anything fails, the previous version is put back. When an author turns
+            off downloads in other apps on CurseForge, omaforge looks for the same addon on
+            GitHub or WoWInterface instead.</p>
+          <h4>Objectives</h4>
+          <ul class="objectives">
+            <li>Update everything with <kbd>Ctrl</kbd>+<kbd>U</kbd></li>
+            <li>Pin an addon to keep its version, or ignore it</li>
+            <li>Follow its stable, beta or alpha channel</li>
+          </ul>
+          <h4>Rewards</h4>
+          <div class="rewards">
+            <div class="item" tabindex="0" data-quality="rare">
+              <img src="assets/icons/trade_engineering.jpg" alt="" width="40" height="40">
+              <span class="item-name">Gnomish Update Gear</span>
+              <div class="tooltip" role="tooltip">
+                <b class="q-rare">Gnomish Update Gear</b>
+                <span>Binds when installed</span>
+                <span class="use">Use: Replaces an addon with its new version, or not at all.</span>
+              </div>
+            </div>
+          </div>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/installed.webp" alt="Two addon updates waiting on the Installed tab" loading="lazy" width="1600" height="1030"></button></figure>
+        </article>
+
+        <article class="quest" id="q-wtf" data-zone="Keeping It Current" data-level="30">
+          <h3>Guard the WTF</h3>
+          <p>Your <code>WTF</code> folder holds SavedVariables, keybindings and client settings:
+            years of UI tuning. omaforge backs it up before every bulk update, and any backup
+            can be restored from the Backups tab. Restoring saves your current WTF first.</p>
+          <h4>Objectives</h4>
+          <ul class="objectives">
+            <li>Back up WTF before every bulk update</li>
+            <li>Restore any backup from the Backups tab</li>
+          </ul>
+          <h4>Rewards</h4>
+          <div class="rewards">
+            <div class="item" tabindex="0" data-quality="epic">
+              <img src="assets/icons/inv_box_01.jpg" alt="" width="40" height="40">
+              <span class="item-name">Strongbox of Saved Variables</span>
+              <div class="tooltip" role="tooltip">
+                <b class="q-epic">Strongbox of Saved Variables</b>
+                <span>Unique</span>
+                <span class="use">Use: Keeps a copy of WTF, just in case.</span>
+                <i>"Your raid frames, exactly where you left them."</i>
+              </div>
+            </div>
+          </div>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/backups.webp" alt="The Backups tab with WTF snapshots and restore buttons" loading="lazy" width="1600" height="1030"></button></figure>
+        </article>
+
+        <article class="quest" id="q-colors" data-zone="Omarchy" data-level="40">
+          <h3>Wear Your Colors</h3>
+          <p>omaforge uses the active Omarchy theme's colors and font, and re-themes live when
+            you run <code>omarchy theme set</code>. On other desktops it wears its own dark
+            theme.</p>
+          <h4>Objectives</h4>
+          <ul class="objectives">
+            <li>Change your Omarchy theme</li>
+            <li>Watch omaforge change with it</li>
+          </ul>
+          <h4>Rewards</h4>
+          <div class="rewards">
+            <div class="item" tabindex="0" data-quality="epic">
+              <img src="assets/icons/inv_misc_gem_variety_01.jpg" alt="" width="40" height="40">
+              <span class="item-name">Prismatic Theme Gem</span>
+              <div class="tooltip" role="tooltip">
+                <b class="q-epic">Prismatic Theme Gem</b>
+                <span>Socket: Any color</span>
+                <span class="use">Use: Matches your Omarchy theme, live.</span>
+              </div>
+            </div>
+          </div>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/themes.webp" alt="omaforge in Tokyo Night, Catppuccin Latte, Gruvbox and Rosé Pine" loading="lazy" width="1600" height="1040"></button></figure>
+        </article>
+
+        <article class="quest" id="q-cli" data-zone="Omarchy" data-level="50">
+          <h3>The Scroll of Commands</h3>
+          <p>Everything the app does is also a command, and every command takes
+            <code>--json</code> for scripts. Turn on the daily timer and your addons update
+            themselves, with a desktop notification when they do.</p>
+          <h4>Objectives</h4>
+          <ul class="objectives">
+            <li>Update every client from a terminal</li>
+            <li>Turn on the daily update timer</li>
+            <li>Carry an addon list to another machine</li>
+          </ul>
+<pre class="scroll"><code><span class="c"># update every client; WTF is backed up first</span>
+omaforge update --all --notify
+
+<span class="c"># the same, every day</span>
+systemctl --user enable --now omaforge-update.timer
+
+<span class="c"># take your addons with you</span>
+omaforge export retail.json
+omaforge import retail.json -c forever</code></pre>
+          <h4>Rewards</h4>
+          <div class="rewards">
+            <div class="item" tabindex="0" data-quality="uncommon">
+              <img src="assets/icons/inv_scroll_05.jpg" alt="" width="40" height="40">
+              <span class="item-name">Scroll of Automation</span>
+              <div class="tooltip" role="tooltip">
+                <b class="q-uncommon">Scroll of Automation</b>
+                <span>Binds to account</span>
+                <span class="use">Use: Updates your addons while you sleep.</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+    <div class="ql-foot">
+      <button type="button" class="wow-btn small" id="accept">Accept</button>
+      <button type="button" class="wow-btn small ghost" id="next">Next quest ›</button>
+    </div>
+  </div>
+</section>
+
+<section class="section loot-section" id="loot">
+  <div class="section-head">
+    <h2 class="heading">Claim Your Loot</h2>
+    <p class="sub">Every package is on <a href="https://github.com/ninepointlabs/omaforge/releases/latest">GitHub Releases</a>. Pick the one for your realm.</p>
+  </div>
+
+  <div class="loot">
+    <div class="loot-bar"><span>Loot</span><span class="loot-from">omaforge <span data-version>v0.2.4</span></span></div>
+
+    <div class="loot-item" data-quality="legendary">
+      <img src="assets/icons/trade_blacksmithing.jpg" alt="" width="48" height="48">
+      <div class="loot-text">
+        <b class="q-legendary">Omarchy &amp; Arch</b>
+        <span>Legendary · adds “WoW Addons” to the Omarchy menu</span>
+<pre><code>sudo pacman -U <span data-asset="arch">omaforge-0.2.4-1-any.pkg.tar.zst</span>
+omaforge setup omarchy</code></pre>
+      </div>
+      <div class="loot-actions">
+        <a class="wow-btn small" data-download="arch" href="https://github.com/ninepointlabs/omaforge/releases/download/v0.2.4/omaforge-0.2.4-1-any.pkg.tar.zst">Download</a>
+        <button type="button" class="wow-btn small ghost" data-copy>Copy</button>
+      </div>
+    </div>
+
+    <div class="loot-item" data-quality="epic">
+      <img src="assets/icons/inv_misc_bag_10.jpg" alt="" width="48" height="48">
+      <div class="loot-text">
+        <b class="q-epic">Debian 13+ &amp; Ubuntu 26.04+</b>
+        <span>Epic · .deb</span>
+<pre><code>sudo apt install ./<span data-asset="deb">omaforge_0.2.4-1_all.deb</span></code></pre>
+      </div>
+      <div class="loot-actions">
+        <a class="wow-btn small" data-download="deb" href="https://github.com/ninepointlabs/omaforge/releases/download/v0.2.4/omaforge_0.2.4-1_all.deb">Download</a>
+        <button type="button" class="wow-btn small ghost" data-copy>Copy</button>
+      </div>
+    </div>
+
+    <div class="loot-item" data-quality="rare">
+      <img src="assets/icons/inv_misc_coin_01.jpg" alt="" width="48" height="48">
+      <div class="loot-text">
+        <b class="q-rare">Fedora</b>
+        <span>Rare · .rpm</span>
+<pre><code>sudo dnf install ./<span data-asset="rpm">omaforge-0.2.4-1.noarch.rpm</span></code></pre>
+      </div>
+      <div class="loot-actions">
+        <a class="wow-btn small" data-download="rpm" href="https://github.com/ninepointlabs/omaforge/releases/download/v0.2.4/omaforge-0.2.4-1.noarch.rpm">Download</a>
+        <button type="button" class="wow-btn small ghost" data-copy>Copy</button>
+      </div>
+    </div>
+
+    <div class="loot-item" data-quality="uncommon">
+      <img src="assets/icons/inv_misc_rune_01.jpg" alt="" width="48" height="48">
+      <div class="loot-text">
+        <b class="q-uncommon">Anywhere else, with pipx</b>
+        <span>Uncommon · Python 3.11+ · bring your own CurseForge key</span>
+<pre><code>pipx install "omaforge[gui] @ git+https://github.com/ninepointlabs/omaforge"</code></pre>
+      </div>
+      <div class="loot-actions">
+        <button type="button" class="wow-btn small ghost" data-copy>Copy</button>
+      </div>
+    </div>
+  </div>
+  <p class="loot-note">Release packages include omaforge's CurseForge key. WoWInterface and GitHub need no key at all.</p>
+</section>
+
+<section class="section tavern" id="tavern">
+  <div class="section-head">
+    <h2 class="heading">The Tavern</h2>
+    <p class="sub">Questions, answered by the innkeeper.</p>
+  </div>
+
+  <div class="gossip">
+    <div class="gossip-bar"><img src="assets/icons/inv_misc_note_01.jpg" alt="" width="32" height="32"><span>Innkeeper Forgewell</span></div>
+    <div class="gossip-body parchment">
+      <p class="greeting">Well met, traveler! Pull up a stool by the fire. What would you like to know?</p>
+
+      <details>
+        <summary>Does it find my Wine or Proton install?</summary>
+        <p>It looks in Lutris (including the Flatpak), Steam and Proton, Bottles, Heroic and
+          <code>~/.wine</code> for a <code>World of Warcraft</code> folder, and lists every
+          client inside it. If yours lives somewhere else, add the folder under Settings.</p>
+      </details>
+      <details>
+        <summary>Will it mess up my UI settings?</summary>
+        <p>No. It never touches <code>WTF</code> except to back it up before a bulk update,
+          and to restore a backup when you ask. Updates are swapped in atomically, and a
+          failed update puts the previous version back.</p>
+      </details>
+      <details>
+        <summary>Do I need a CurseForge API key?</summary>
+        <p>Not with the release packages: they include omaforge's key. A pipx install or a
+          build from source needs your own, entered under Settings. WoWInterface and GitHub
+          work without any key.</p>
+      </details>
+      <details>
+        <summary>Why won't some CurseForge addons download?</summary>
+        <p>About half of the most popular CurseForge addons have downloads in other apps
+          turned off by their authors. omaforge then looks for the same addon on GitHub or
+          WoWInterface and installs from there. If there's none, <b>Page</b> opens it on
+          curseforge.com.</p>
+      </details>
+      <details>
+        <summary>Does it support World of Warcraft: Forever?</summary>
+        <p>Yes. Forever gets its own entry, its own Explore lists and the right builds from
+          CurseForge and GitHub. WoWInterface can't tell Forever and Classic Era apart, so its
+          Forever lists include Classic Era addons.</p>
+      </details>
+      <details>
+        <summary>Do I need Omarchy?</summary>
+        <p>No. It's made for Omarchy, but runs on any Linux desktop: there are packages for
+          Arch, Debian, Ubuntu and Fedora, and pipx covers the rest. Outside Omarchy it uses
+          its own dark theme.</p>
+      </details>
+      <details>
+        <summary>Is this made by Blizzard?</summary>
+        <p>No. omaforge is an unofficial, free and open source fan project by
+          <a href="https://omarchy.ninepointlabs.com">Nine Point Labs</a>. It isn't affiliated
+          with or endorsed by Blizzard Entertainment.</p>
+      </details>
+      <a class="gossip-bye" href="#top">Farewell.</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="crests" aria-hidden="true">
+    <img src="assets/art/alliance-crest.webp" alt="" width="40" height="50">
+    <img src="assets/ui/omaforge.svg" alt="" width="44" height="44">
+    <img src="assets/art/horde-sigil.webp" alt="" width="40" height="50">
+  </div>
+  <nav class="footer-links" aria-label="Links">
+    <a href="https://github.com/ninepointlabs/omaforge">Source</a>
+    <a href="https://github.com/ninepointlabs/omaforge/releases">Releases</a>
+    <a href="https://github.com/ninepointlabs/omaforge/issues">Issues</a>
+    <a href="https://omarchy.ninepointlabs.com">Nine Point Labs</a>
+  </nav>
+  <p class="legal">
+    omaforge is an unofficial fan project, not affiliated with or endorsed by Blizzard
+    Entertainment. World of Warcraft, Warcraft and Blizzard Entertainment are trademarks or
+    registered trademarks of Blizzard Entertainment, Inc. Game artwork, icons and the Alliance
+    and Horde emblems © Blizzard Entertainment, Inc. (<a href="https://github.com/ninepointlabs/omaforge/blob/main/site/SOURCES.md">sources</a>).
+    omaforge itself is MIT licensed.
+  </p>
+</footer>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<p class="zone-text" id="zone-text" aria-live="polite"></p>
+
+<dialog class="lightbox" id="lightbox" aria-label="Screenshot">
+  <img alt="">
+  <p>Esc or click to close</p>
+</dialog>
+
+<script src="app.js" defer></script>
+</body>
+</html>

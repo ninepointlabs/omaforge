@@ -1,0 +1,2 @@
+# The website is published to GitHub Pages; keep it out of source tarballs.
+site/ export-ignore
