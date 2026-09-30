@@ -75,6 +75,12 @@ a repository's releases.
 
 ![Search results for WeakAuras, sorted by downloads](docs/screenshots/search.png)
 
+**See before you install.** Click any addon for its full description,
+screenshots and links from its source. Click a screenshot to see it full
+size; <kbd>Esc</kbd> or a click outside closes the window.
+
+![Details for Deadly Boss Mods: description, screenshots and links](docs/screenshots/details.png)
+
 **Updates without surprises.**
 
 - **Safe updates:** each download is unpacked next to `AddOns`, then swapped

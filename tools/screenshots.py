@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT))
 os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
 
 THEMES = Path("/usr/share/omarchy/themes")
+DETAILS_ADDON = "3358"  # CurseForge: Deadly Boss Mods, which has a screenshot gallery
 
 
 def main() -> int:
@@ -43,7 +44,7 @@ def main() -> int:
     os.environ["QT_SCALE_FACTOR"] = args.scale
     args.out.mkdir(parents=True, exist_ok=True)
 
-    from PySide6.QtCore import QObject, QTimer
+    from PySide6.QtCore import Q_ARG, QMetaObject, QObject, QTimer
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtQml import QQmlApplicationEngine
     from PySide6.QtQuick import QQuickWindow
@@ -80,6 +81,8 @@ def main() -> int:
         (None, lambda: backend.selectClient(client("retail"))),
         ("installed", lambda: win.setProperty("pageIndex", 0)),
         ("explore", lambda: (win.setProperty("pageIndex", 1), backend.loadExplore("curseforge", "popular", ""))),
+        ("details", lambda: show_details(DETAILS_ADDON)),
+        (None, lambda: close_details()),
         ("explore-forever", lambda: (backend.selectClient(client("forever")), win.setProperty("pageIndex", 1),
                                      backend.loadExplore("wowinterface", "favorites", ""))),
         (None, lambda: backend.selectClient(client("retail"))),
@@ -91,6 +94,15 @@ def main() -> int:
     for name in args.themes.split(","):
         scenes.append((None, lambda n=name: (use_theme(n), win.setProperty("pageIndex", 0))))
         scenes.append((f"theme-{name}", lambda: None))
+
+    def show_details(addon_id):
+        addon = next((r for r in backend.exploreResults if r["id"] == addon_id), None)
+        addon = addon or {"provider": "curseforge", "id": addon_id, "name": ""}
+        details = engine.rootObjects()[0].findChild(QObject, "details")
+        QMetaObject.invokeMethod(details, "show", Q_ARG("QVariant", addon))
+
+    def close_details():
+        QMetaObject.invokeMethod(engine.rootObjects()[0].findChild(QObject, "details"), "close")
 
     def set_search_sort():
         root = engine.rootObjects()[0]
