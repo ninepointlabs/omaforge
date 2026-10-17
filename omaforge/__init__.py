@@ -9,4 +9,4 @@ ORGANIZATION = "Nine Point Labs"
 SUPPORT_EMAIL = "help@ninepointlabs.com"
 CREATED = "September 2026"  # first commit: 2026-09-28
 LICENSE_NAME = "MIT License"
-COPYRIGHT = "© 2026 Ninepoint Labs"  # as written in LICENSE
+COPYRIGHT = "© 2026 Nine Point Labs"  # as written in LICENSE
