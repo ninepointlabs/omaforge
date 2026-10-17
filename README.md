@@ -141,6 +141,16 @@ sudo dnf install ./omaforge-*.noarch.rpm
 omaforge appears in the app launcher as **Omaforge**. Outside Omarchy it uses
 its own dark theme and your system's monospace font.
 
+### With autonomix-cli
+
+[autonomix-cli](https://github.com/ninepointlabs/autonomix-cli) installs the
+right package for your distribution from the latest release and keeps it
+updated:
+
+```sh
+autonomix-cli add https://github.com/ninepointlabs/omaforge
+```
+
 ### Anywhere else
 
 Any distribution with Python 3.11 or newer, including Ubuntu 24.04, can
