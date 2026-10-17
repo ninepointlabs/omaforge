@@ -17,6 +17,7 @@ from PySide6.QtQml import QQmlApplicationEngine  # noqa: E402
 
 from omaforge import config  # noqa: E402
 from omaforge.core.manager import Manager  # noqa: E402
+from omaforge.ui.about import AppInfo  # noqa: E402
 from omaforge.ui.app import QML_DIR  # noqa: E402
 from omaforge.ui.backend import Backend  # noqa: E402
 from omaforge.ui.theme import Theme  # noqa: E402
@@ -57,10 +58,11 @@ def test_main_window_loads_without_qml_warnings(app, wow_root, tmp_path):
 
     previous = qInstallMessageHandler(handler)
     try:
-        theme, backend = Theme(), Backend(manager)
+        theme, backend, info = Theme(), Backend(manager), AppInfo()
         engine = QQmlApplicationEngine()
         engine.rootContext().setContextProperty("theme", theme)
         engine.rootContext().setContextProperty("backend", backend)
+        engine.rootContext().setContextProperty("appInfo", info)
         engine.load(QML_DIR / "Main.qml")
         assert engine.rootObjects()
         wait(app, backend)
@@ -84,6 +86,29 @@ def test_main_window_loads_without_qml_warnings(app, wow_root, tmp_path):
         backend.selectClient(backend.clients[0]["key"])
         wait(app, backend)
         assert backend.client["label"] == "Forever Beta" and backend.addons == []
+
+        # About: F1 opens it, the license can be read, Esc closes it.
+        from PySide6.QtCore import QObject, Qt
+        from PySide6.QtQuick import QQuickItem, QQuickWindow
+        from PySide6.QtTest import QTest
+        from shiboken6 import Shiboken
+
+        win = Shiboken.wrapInstance(Shiboken.getCppPointer(win)[0], QQuickWindow)
+        about = win.findChild(QObject, "about")
+        assert not about.property("visible")
+        win.requestActivate()
+        QTest.keyClick(win, Qt.Key_F1)
+        wait(app, backend)
+        assert about.property("visible")
+        license_text = win.findChild(QQuickItem, "aboutLicenseText")
+        assert not license_text.isVisible()
+        about.setProperty("showLicense", True)
+        wait(app, backend)
+        assert license_text.isVisible() and license_text.property("text").startswith("MIT License")
+        assert "no telemetry" in win.findChild(QQuickItem, "aboutPrivacy").property("text")
+        QTest.keyClick(win, Qt.Key_Escape)
+        wait(app, backend)
+        assert not about.property("visible")
         backend.shutdown()
     finally:
         qInstallMessageHandler(previous)
@@ -124,10 +149,11 @@ def test_details_popup_loads_and_closes_with_escape(app, wow_root, tmp_path):
 
     previous = qInstallMessageHandler(handler)
     try:
-        theme, backend = Theme(), Backend(manager)
+        theme, backend, info = Theme(), Backend(manager), AppInfo()
         engine = QQmlApplicationEngine()
         engine.rootContext().setContextProperty("theme", theme)
         engine.rootContext().setContextProperty("backend", backend)
+        engine.rootContext().setContextProperty("appInfo", info)
         engine.load(QML_DIR / "Main.qml")
         win = Shiboken.wrapInstance(Shiboken.getCppPointer(engine.rootObjects()[0])[0], QQuickWindow)
         wait(app, backend)

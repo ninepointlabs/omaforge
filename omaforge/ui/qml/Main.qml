@@ -52,6 +52,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+3"; onActivated: win.go(2) }
     Shortcut { sequence: "Ctrl+4"; onActivated: win.go(3) }
     Shortcut { sequence: "Ctrl+,"; onActivated: win.go(win.settingsPage) }
+    Shortcut { sequence: "F1"; onActivated: about.open() }
 
     Connections {
         target: backend
@@ -145,8 +146,10 @@ ApplicationWindow {
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.margins: 12
+                    spacing: 0
                     Btn { text: "Rescan"; subtle: true; onClicked: backend.rescan() }
                     Item { Layout.fillWidth: true }
+                    Btn { objectName: "sidebarAbout"; text: "About"; subtle: true; leftPadding: 8; rightPadding: 8; onClicked: about.open() }
                     Btn { text: "Settings"; subtle: true; active: win.pageIndex === win.settingsPage; onClicked: win.go(win.settingsPage) }
                 }
             }
@@ -212,7 +215,7 @@ ApplicationWindow {
                 ExplorePage { id: explore; onShowDetails: function (a) { details.show(a) } }
                 SearchPage { id: search; onShowDetails: function (a) { details.show(a) } }
                 BackupsPage { onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) } }
-                SettingsPage { onAddFolderRequested: folderDialog.open() }
+                SettingsPage { onAddFolderRequested: folderDialog.open(); onAboutRequested: about.open() }
             }
 
             // Status bar.
@@ -239,7 +242,7 @@ ApplicationWindow {
                     anchors.leftMargin: 16
                     dim: true
                     font.pixelSize: 11
-                    text: backend.busy ? (backend.status || "Working") + "…" : "Ctrl+R check · Ctrl+U update all · Ctrl+2 explore · Ctrl+K search · Ctrl+F filter"
+                    text: backend.busy ? (backend.status || "Working") + "…" : "Ctrl+R check · Ctrl+U update all · Ctrl+2 explore · Ctrl+K search · Ctrl+F filter · F1 about"
                 }
             }
         }
@@ -254,6 +257,7 @@ ApplicationWindow {
     }
     Confirm { id: confirm }
     DetailsPopup { id: details; objectName: "details" }
+    About { id: about; objectName: "about" }
 
     FileDialog {
         id: exportDialog

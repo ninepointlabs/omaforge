@@ -5,6 +5,7 @@ import QtQuick.Layouts
 ScrollView {
     id: page
     signal addFolderRequested()
+    signal aboutRequested()
     contentWidth: availableWidth
     clip: true
 
@@ -155,7 +156,11 @@ ScrollView {
             text: "omaforge update --all --notify   updates every client's addons from a keybinding or timer.\n"
                   + "omaforge --help                  lists every command."
         }
-        Label2 { text: "omaforge " + backend.version; dim: true; font.pixelSize: 11 }
+        RowLayout {
+            spacing: 8
+            Label2 { text: "omaforge " + backend.version; dim: true; font.pixelSize: 11 }
+            Btn { text: "About omaforge"; subtle: true; onClicked: page.aboutRequested() }
+        }
         Item { height: 24 }
     }
 }

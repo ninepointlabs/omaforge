@@ -17,6 +17,7 @@ def run(argv: list[str] | None = None) -> int:
     from PySide6.QtGui import QGuiApplication, QIcon
     from PySide6.QtQml import QQmlApplicationEngine
 
+    from omaforge.ui.about import AppInfo
     from omaforge.ui.backend import Backend
     from omaforge.ui.theme import Theme
 
@@ -30,9 +31,11 @@ def run(argv: list[str] | None = None) -> int:
 
     theme = Theme()
     backend = Backend()
+    app_info = AppInfo()
     engine = QQmlApplicationEngine()
     engine.rootContext().setContextProperty("theme", theme)
     engine.rootContext().setContextProperty("backend", backend)
+    engine.rootContext().setContextProperty("appInfo", app_info)
     engine.load(QML_DIR / "Main.qml")
     if not engine.rootObjects():
         msg = "omaforge: the interface failed to load (see the QML errors above); please report this"
