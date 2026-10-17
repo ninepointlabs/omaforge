@@ -21,7 +21,7 @@ include = ["omaforge*"]
 
 [tool.setuptools.package-data]
 "omaforge.core" = ["flavors.toml"]
-"omaforge.ui" = ["qml/*", "icons/*"]
+"omaforge.ui" = ["qml/*", "icons/*", "LICENSE.txt"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

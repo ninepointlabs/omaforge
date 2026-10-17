@@ -183,6 +183,7 @@ systemctl --user enable --now omaforge-update.timer
 | <kbd>Ctrl</kbd>+<kbd>F</kbd> | filter installed addons |
 | <kbd>Ctrl</kbd>+<kbd>,</kbd> | settings |
 | <kbd>Ctrl</kbd>+<kbd>Q</kbd> | quit |
+| <kbd>F1</kbd> | about omaforge |
 | <kbd>Esc</kbd> | close an addon's details or screenshot |
 
 Click an addon anywhere outside its buttons to see its description,
@@ -192,6 +193,10 @@ closes either view.
 
 Hover over an addon's folder count to see its folders, and over a client in
 the sidebar to see where it lives.
+
+**About** (at the bottom of the sidebar, in Settings, or <kbd>F1</kbd>) shows
+the version, license, Nine Point Labs and the support address,
+[help@ninepointlabs.com](mailto:help@ninepointlabs.com).
 
 ## Command line
 
