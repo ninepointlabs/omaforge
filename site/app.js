@@ -108,9 +108,11 @@
       z.className = "ql-zone";
       z.textContent = lastZone;
       z.setAttribute("aria-hidden", "true");
+      z.setAttribute("role", "none");
       list.append(z);
     }
     const li = document.createElement("li");
+    li.setAttribute("role", "none");
     const b = document.createElement("button");
     b.type = "button";
     b.id = `tab-${q.id}`;
