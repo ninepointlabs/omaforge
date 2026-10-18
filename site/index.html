@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>omaforge · World of Warcraft addons on Linux</title>
   <meta name="description" content="omaforge is a free World of Warcraft addon manager for Linux and Omarchy. Retail, Classic and Forever under Wine or Proton: found, installed and kept current from CurseForge, WoWInterface and GitHub.">
+  <link rel="canonical" href="https://omaforge.ninepointlabs.com/">
   <meta name="theme-color" content="#0b0806">
   <link rel="icon" href="assets/ui/omaforge.svg" type="image/svg+xml">
   <meta property="og:type" content="website">
@@ -15,7 +16,8 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=IM+Fell+English:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=IM+Fell+English:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=IM+Fell+English:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap"></noscript>
   <link rel="preload" as="image" href="assets/art/loading-painting.webp">
   <link rel="stylesheet" href="style.css">
   <script>document.documentElement.classList.add("js")</script>
@@ -36,10 +38,10 @@
   </nav>
   <div class="faction" role="group" aria-label="Choose your faction">
     <button type="button" data-pick="alliance" aria-pressed="false" title="For the Alliance!">
-      <img src="assets/art/alliance-crest.webp" alt="Alliance" width="28" height="35">
+      <img src="assets/art/alliance-crest-sm.webp" alt="Alliance" width="28" height="35">
     </button>
     <button type="button" data-pick="horde" aria-pressed="false" title="For the Horde!">
-      <img src="assets/art/horde-sigil.webp" alt="Horde" width="28" height="35">
+      <img src="assets/art/horde-sigil-sm.webp" alt="Horde" width="28" height="35">
     </button>
   </div>
 </header>
@@ -98,7 +100,7 @@
 
       <div class="ql-pages">
 
-        <article class="quest" id="q-clients" data-zone="Wine Prefixes" data-level="10">
+        <div class="quest" id="q-clients" data-zone="Wine Prefixes" data-level="10">
           <h3>Every Client, Found for You</h3>
           <p>Your World of Warcraft installs are scattered across the land: in Lutris, in
             Steam's Proton prefixes, in Bottles and Heroic, in a lonely <code>~/.wine</code>.
@@ -114,7 +116,7 @@
           <h4>Rewards</h4>
           <div class="rewards">
             <div class="item" tabindex="0" data-quality="rare">
-              <img src="assets/icons/inv_misc_spyglass_03.jpg" alt="" width="40" height="40">
+              <img src="assets/icons/inv_misc_spyglass_03.jpg" alt="" width="40" height="40" loading="lazy" decoding="async">
               <span class="item-name">Spyglass of the Far Prefix</span>
               <div class="tooltip" role="tooltip">
                 <b class="q-rare">Spyglass of the Far Prefix</b>
@@ -124,10 +126,10 @@
               </div>
             </div>
           </div>
-          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/installed.webp" alt="omaforge listing the installed addons of a Retail client" loading="lazy" width="1600" height="1030"></button></figure>
-        </article>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/installed.webp" alt="omaforge listing the installed addons of a Retail client" loading="lazy" width="1600" height="1030" decoding="async"></button></figure>
+        </div>
 
-        <article class="quest" id="q-known" data-zone="Wine Prefixes" data-level="12">
+        <div class="quest" id="q-known" data-zone="Wine Prefixes" data-level="12">
           <h3>Know What You Already Have</h3>
           <p>Some addons you dragged in by hand, others came from another manager. omaforge
             recognizes them all without reinstalling a thing, and anything it can't place is
@@ -142,7 +144,7 @@
           <h4>Rewards</h4>
           <div class="rewards">
             <div class="item" tabindex="0" data-quality="epic">
-              <img src="assets/icons/inv_misc_book_09.jpg" alt="" width="40" height="40">
+              <img src="assets/icons/inv_misc_book_09.jpg" alt="" width="40" height="40" loading="lazy" decoding="async">
               <span class="item-name">Ledger of Fingerprints</span>
               <div class="tooltip" role="tooltip">
                 <b class="q-epic">Ledger of Fingerprints</b>
@@ -152,10 +154,10 @@
               </div>
             </div>
           </div>
-          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/installed.webp" alt="Installed addons, each linked to its source" loading="lazy" width="1600" height="1030"></button></figure>
-        </article>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/installed.webp" alt="Installed addons, each linked to its source" loading="lazy" width="1600" height="1030" decoding="async"></button></figure>
+        </div>
 
-        <article class="quest" id="q-explore" data-zone="The Addon Bazaar" data-level="20">
+        <div class="quest" id="q-explore" data-zone="The Addon Bazaar" data-level="20">
           <h3>Finds the Good Stuff</h3>
           <p>Explore ranks the top addons for the game you have selected, with icons, download
             counts and categories. Each game version gets its own list, so Forever shows Forever
@@ -170,7 +172,7 @@
           <h4>Rewards</h4>
           <div class="rewards">
             <div class="item" tabindex="0" data-quality="uncommon">
-              <img src="assets/icons/inv_misc_map_01.jpg" alt="" width="40" height="40">
+              <img src="assets/icons/inv_misc_map_01.jpg" alt="" width="40" height="40" loading="lazy" decoding="async">
               <span class="item-name">Map of Popular Addons</span>
               <div class="tooltip" role="tooltip">
                 <b class="q-uncommon">Map of Popular Addons</b>
@@ -179,10 +181,10 @@
               </div>
             </div>
           </div>
-          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/explore.webp" alt="Explore: the most popular Retail addons on CurseForge" loading="lazy" width="1600" height="1030"></button></figure>
-        </article>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/explore.webp" alt="Explore: the most popular Retail addons on CurseForge" loading="lazy" width="1600" height="1030" decoding="async"></button></figure>
+        </div>
 
-        <article class="quest" id="q-search" data-zone="The Addon Bazaar" data-level="22">
+        <div class="quest" id="q-search" data-zone="The Addon Bazaar" data-level="22">
           <h3>Seek Across Three Realms</h3>
           <p>Search CurseForge, WoWInterface and GitHub at once, then sort by downloads,
             popularity, favorites, recent updates or name. Paste a GitHub URL to install
@@ -196,7 +198,7 @@
           <h4>Rewards</h4>
           <div class="rewards">
             <div class="item" tabindex="0" data-quality="rare">
-              <img src="assets/icons/inv_misc_enggizmos_27.jpg" alt="" width="40" height="40">
+              <img src="assets/icons/inv_misc_enggizmos_27.jpg" alt="" width="40" height="40" loading="lazy" decoding="async">
               <span class="item-name">Far-Seeing Gizmo</span>
               <div class="tooltip" role="tooltip">
                 <b class="q-rare">Far-Seeing Gizmo</b>
@@ -206,10 +208,10 @@
               </div>
             </div>
           </div>
-          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/search.webp" alt="Search results for WeakAuras, sorted by downloads" loading="lazy" width="1600" height="1030"></button></figure>
-        </article>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/search.webp" alt="Search results for WeakAuras, sorted by downloads" loading="lazy" width="1600" height="1030" decoding="async"></button></figure>
+        </div>
 
-        <article class="quest" id="q-details" data-zone="The Addon Bazaar" data-level="24" data-new>
+        <div class="quest" id="q-details" data-zone="The Addon Bazaar" data-level="24" data-new>
           <h3>See Before You Install</h3>
           <p>Click any addon to open its details: the full description, screenshots and links
             from its source. Click a screenshot to see it full size and browse with the arrow
@@ -223,7 +225,7 @@
           <h4>Rewards</h4>
           <div class="rewards">
             <div class="item" tabindex="0" data-quality="epic">
-              <img src="assets/icons/spell_holy_magicalsentry.jpg" alt="" width="40" height="40">
+              <img src="assets/icons/spell_holy_magicalsentry.jpg" alt="" width="40" height="40" loading="lazy" decoding="async">
               <span class="item-name">Scroll of True Seeing</span>
               <div class="tooltip" role="tooltip">
                 <b class="q-epic">Scroll of True Seeing</b>
@@ -232,10 +234,10 @@
               </div>
             </div>
           </div>
-          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/details.webp" alt="The details window for Deadly Boss Mods, with its screenshots and description" loading="lazy" width="1600" height="1030"></button></figure>
-        </article>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/details.webp" alt="The details window for Deadly Boss Mods, with its screenshots and description" loading="lazy" width="1600" height="1030" decoding="async"></button></figure>
+        </div>
 
-        <article class="quest" id="q-updates" data-zone="Keeping It Current" data-level="30">
+        <div class="quest" id="q-updates" data-zone="Keeping It Current" data-level="30">
           <h3>Updates Without Surprises</h3>
           <p>Each download is unpacked next to <code>AddOns</code>, then swapped in with atomic
             renames. If anything fails, the previous version is put back. When an author turns
@@ -250,7 +252,7 @@
           <h4>Rewards</h4>
           <div class="rewards">
             <div class="item" tabindex="0" data-quality="rare">
-              <img src="assets/icons/trade_engineering.jpg" alt="" width="40" height="40">
+              <img src="assets/icons/trade_engineering.jpg" alt="" width="40" height="40" loading="lazy" decoding="async">
               <span class="item-name">Gnomish Update Gear</span>
               <div class="tooltip" role="tooltip">
                 <b class="q-rare">Gnomish Update Gear</b>
@@ -259,10 +261,10 @@
               </div>
             </div>
           </div>
-          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/installed.webp" alt="Two addon updates waiting on the Installed tab" loading="lazy" width="1600" height="1030"></button></figure>
-        </article>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/installed.webp" alt="Two addon updates waiting on the Installed tab" loading="lazy" width="1600" height="1030" decoding="async"></button></figure>
+        </div>
 
-        <article class="quest" id="q-wtf" data-zone="Keeping It Current" data-level="30">
+        <div class="quest" id="q-wtf" data-zone="Keeping It Current" data-level="30">
           <h3>Guard the WTF</h3>
           <p>Your <code>WTF</code> folder holds SavedVariables, keybindings and client settings:
             years of UI tuning. omaforge backs it up before every bulk update, and any backup
@@ -275,7 +277,7 @@
           <h4>Rewards</h4>
           <div class="rewards">
             <div class="item" tabindex="0" data-quality="epic">
-              <img src="assets/icons/inv_box_01.jpg" alt="" width="40" height="40">
+              <img src="assets/icons/inv_box_01.jpg" alt="" width="40" height="40" loading="lazy" decoding="async">
               <span class="item-name">Strongbox of Saved Variables</span>
               <div class="tooltip" role="tooltip">
                 <b class="q-epic">Strongbox of Saved Variables</b>
@@ -285,10 +287,10 @@
               </div>
             </div>
           </div>
-          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/backups.webp" alt="The Backups tab with WTF snapshots and restore buttons" loading="lazy" width="1600" height="1030"></button></figure>
-        </article>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/backups.webp" alt="The Backups tab with WTF snapshots and restore buttons" loading="lazy" width="1600" height="1030" decoding="async"></button></figure>
+        </div>
 
-        <article class="quest" id="q-colors" data-zone="Omarchy" data-level="40">
+        <div class="quest" id="q-colors" data-zone="Omarchy" data-level="40">
           <h3>Wear Your Colors</h3>
           <p>omaforge uses the active Omarchy theme's colors and font, and re-themes live when
             you run <code>omarchy theme set</code>. On other desktops it wears its own dark
@@ -301,7 +303,7 @@
           <h4>Rewards</h4>
           <div class="rewards">
             <div class="item" tabindex="0" data-quality="epic">
-              <img src="assets/icons/inv_misc_gem_variety_01.jpg" alt="" width="40" height="40">
+              <img src="assets/icons/inv_misc_gem_variety_01.jpg" alt="" width="40" height="40" loading="lazy" decoding="async">
               <span class="item-name">Prismatic Theme Gem</span>
               <div class="tooltip" role="tooltip">
                 <b class="q-epic">Prismatic Theme Gem</b>
@@ -310,10 +312,10 @@
               </div>
             </div>
           </div>
-          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/themes.webp" alt="omaforge in Tokyo Night, Catppuccin Latte, Gruvbox and Rosé Pine" loading="lazy" width="1600" height="1040"></button></figure>
-        </article>
+          <figure class="shot"><button type="button" data-zoom><img src="assets/shots/themes.webp" alt="omaforge in Tokyo Night, Catppuccin Latte, Gruvbox and Rosé Pine" loading="lazy" width="1600" height="1040" decoding="async"></button></figure>
+        </div>
 
-        <article class="quest" id="q-cli" data-zone="Omarchy" data-level="50">
+        <div class="quest" id="q-cli" data-zone="Omarchy" data-level="50">
           <h3>The Scroll of Commands</h3>
           <p>Everything the app does is also a command, and every command takes
             <code>--json</code> for scripts. Turn on the daily timer and your addons update
@@ -336,7 +338,7 @@ omaforge import retail.json -c forever</code></pre>
           <h4>Rewards</h4>
           <div class="rewards">
             <div class="item" tabindex="0" data-quality="uncommon">
-              <img src="assets/icons/inv_scroll_05.jpg" alt="" width="40" height="40">
+              <img src="assets/icons/inv_scroll_05.jpg" alt="" width="40" height="40" loading="lazy" decoding="async">
               <span class="item-name">Scroll of Automation</span>
               <div class="tooltip" role="tooltip">
                 <b class="q-uncommon">Scroll of Automation</b>
@@ -345,7 +347,7 @@ omaforge import retail.json -c forever</code></pre>
               </div>
             </div>
           </div>
-        </article>
+        </div>
 
       </div>
     </div>
@@ -366,7 +368,7 @@ omaforge import retail.json -c forever</code></pre>
     <div class="loot-bar"><span>Loot</span><span class="loot-from">omaforge <span data-version>v0.2.5</span></span></div>
 
     <div class="loot-item" data-quality="legendary">
-      <img src="assets/icons/trade_blacksmithing.jpg" alt="" width="48" height="48">
+      <img src="assets/icons/trade_blacksmithing.jpg" alt="" width="48" height="48" loading="lazy" decoding="async">
       <div class="loot-text">
         <b class="q-legendary">Omarchy &amp; Arch</b>
         <span>Legendary · adds “WoW Addons” to the Omarchy menu</span>
@@ -380,7 +382,7 @@ omaforge setup omarchy</code></pre>
     </div>
 
     <div class="loot-item" data-quality="epic">
-      <img src="assets/icons/inv_misc_bag_10.jpg" alt="" width="48" height="48">
+      <img src="assets/icons/inv_misc_bag_10.jpg" alt="" width="48" height="48" loading="lazy" decoding="async">
       <div class="loot-text">
         <b class="q-epic">Debian 13+ &amp; Ubuntu 26.04+</b>
         <span>Epic · .deb</span>
@@ -393,7 +395,7 @@ omaforge setup omarchy</code></pre>
     </div>
 
     <div class="loot-item" data-quality="rare">
-      <img src="assets/icons/inv_misc_coin_01.jpg" alt="" width="48" height="48">
+      <img src="assets/icons/inv_misc_coin_01.jpg" alt="" width="48" height="48" loading="lazy" decoding="async">
       <div class="loot-text">
         <b class="q-rare">Fedora</b>
         <span>Rare · .rpm</span>
@@ -406,7 +408,7 @@ omaforge setup omarchy</code></pre>
     </div>
 
     <div class="loot-item" data-quality="uncommon">
-      <img src="assets/icons/inv_misc_rune_01.jpg" alt="" width="48" height="48">
+      <img src="assets/icons/inv_misc_rune_01.jpg" alt="" width="48" height="48" loading="lazy" decoding="async">
       <div class="loot-text">
         <b class="q-uncommon">Anywhere else, with pipx</b>
         <span>Uncommon · Python 3.11+ · bring your own CurseForge key</span>
@@ -427,7 +429,7 @@ omaforge setup omarchy</code></pre>
   </div>
 
   <div class="gossip">
-    <div class="gossip-bar"><img src="assets/icons/inv_misc_note_01.jpg" alt="" width="32" height="32"><span>Innkeeper Forgewell</span></div>
+    <div class="gossip-bar"><img src="assets/icons/inv_misc_note_01.jpg" alt="" width="32" height="32" loading="lazy" decoding="async"><span>Innkeeper Forgewell</span></div>
     <div class="gossip-body parchment">
       <p class="greeting">Well met, traveler! Pull up a stool by the fire. What would you like to know?</p>
 
@@ -483,9 +485,9 @@ omaforge setup omarchy</code></pre>
 
 <footer class="footer">
   <div class="crests" aria-hidden="true">
-    <img src="assets/art/alliance-crest.webp" alt="" width="40" height="50">
-    <img src="assets/ui/omaforge.svg" alt="" width="44" height="44">
-    <img src="assets/art/horde-sigil.webp" alt="" width="40" height="50">
+    <img src="assets/art/alliance-crest-sm.webp" alt="" width="40" height="50" loading="lazy" decoding="async">
+    <img src="assets/ui/omaforge.svg" alt="" width="44" height="44" loading="lazy" decoding="async">
+    <img src="assets/art/horde-sigil-sm.webp" alt="" width="40" height="50" loading="lazy" decoding="async">
   </div>
   <nav class="footer-links" aria-label="Links">
     <a href="https://github.com/ninepointlabs/omaforge">Source</a>
