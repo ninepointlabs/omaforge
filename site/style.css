@@ -677,6 +677,10 @@ html:not(.js) .ql-foot { display: none; }
 .crests img { height: auto; opacity: 0.9; }
 .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px; margin-bottom: 20px; }
 .footer-links a { font: 500 0.85rem var(--display); letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; }
+.footer .social { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 12px 0; }
+.footer .social a { display: inline-flex; color: var(--gold-2); }
+.footer .social a:hover, .footer .social a:focus-visible { color: var(--gold); }
+.footer .social svg { width: 18px; height: 18px; fill: currentColor; }
 .legal { max-width: 720px; margin: 0 auto; color: #7d7260; font-size: 0.88rem; line-height: 1.5; }
 
 /* --- Toasts, zone text, lightbox ------------------------------------------ */
