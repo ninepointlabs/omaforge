@@ -2,6 +2,9 @@
 
 import hashlib
 import json
+import os
+import ssl
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -12,6 +15,34 @@ from omaforge import __version__, paths
 from omaforge.core.fsutil import atomic_write_bytes
 
 USER_AGENT = f"omaforge/{__version__} (+https://github.com/ninepointlabs/omaforge)"
+
+# Where distributions keep their CA bundle. Python's own default is whatever
+# its OpenSSL was built with, which for the AppImage's Python is RHEL's path:
+# fine on Fedora, nothing at all on Arch or Debian.
+CA_FILES = (
+    "/etc/ssl/certs/ca-certificates.crt",  # Debian, Ubuntu, Arch, Gentoo
+    "/etc/pki/tls/certs/ca-bundle.crt",  # Fedora, RHEL
+    "/etc/ssl/ca-bundle.pem",  # openSUSE
+    "/etc/pki/tls/cacert.pem",
+    "/etc/ssl/cert.pem",  # Alpine, macOS-style
+)
+_context: ssl.SSLContext | None = None
+
+
+def ssl_context() -> ssl.SSLContext:
+    """Python's default TLS context, given the system's CA certificates if it found none itself."""
+    global _context
+    if _context is None:
+        context = ssl.create_default_context()
+        if not context.cert_store_stats()["x509_ca"]:
+            # The AppImage's Python also carries python-appimage's bundle, as a last resort.
+            bundled = os.path.join(sys.prefix, os.pardir, "_internal", "certs.pem")
+            for path in (*CA_FILES, bundled):
+                if os.path.isfile(path):
+                    context.load_verify_locations(cafile=path)
+                    break
+        _context = context
+    return _context
 
 
 class HttpError(Exception):
@@ -98,7 +129,8 @@ class Http:
         last_error: Exception | None = None
         for attempt in range(3):
             try:
-                with urllib.request.urlopen(urllib.request.Request(url, headers=req_headers), timeout=self.timeout) as r:
+                with urllib.request.urlopen(urllib.request.Request(url, headers=req_headers), timeout=self.timeout,
+                                            context=ssl_context()) as r:
                     body = r.read()
                     resp_headers = {k.lower(): v for k, v in r.headers.items()}
                 if cache:
@@ -145,7 +177,7 @@ class Http:
         req = urllib.request.Request(url, data=body, method="POST", headers={
             "User-Agent": USER_AGENT, "Content-Type": "application/json", **(headers or {})})
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as r:
+            with urllib.request.urlopen(req, timeout=self.timeout, context=ssl_context()) as r:
                 data = r.read()
         except urllib.error.HTTPError as e:
             if e.code == 429:
@@ -170,7 +202,7 @@ class Http:
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
         tmp = dest.with_name(dest.name + ".part")
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as r, open(tmp, "wb") as fh:
+            with urllib.request.urlopen(req, timeout=self.timeout, context=ssl_context()) as r, open(tmp, "wb") as fh:
                 total = 0
                 while chunk := r.read(1 << 16):
                     total += len(chunk)

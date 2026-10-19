@@ -1,0 +1,10 @@
+# What packaging/appimage/build.sh and smoke.sh need on Ubuntu 22.04.
+ca-certificates curl file binutils patchelf zsync librsvg2-bin desktop-file-utils appstream
+# The libraries Qt links to, so the build can copy them in, and OpenSSL 3 for the TLS check.
+libegl1 libgl1 libopengl0 libfontconfig1 libfreetype6 libdbus-1-3 libglib2.0-0
+libx11-xcb1 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0
+libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 libxcb-xkb1
+libxcb-xfixes0 libxcb-sync1 libxcb-shm0 libxcb-util1 libwayland-client0 libwayland-cursor0
+libwayland-egl1 libxrender1 libxi6 libsm6 libice6 libssl3
+# The smoke test: a headless X server and tools to look at its windows.
+xvfb xauth x11-utils xdotool procps
