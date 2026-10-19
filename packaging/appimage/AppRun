@@ -1,0 +1,81 @@
+#!/bin/sh
+# omaforge's AppImage launcher.
+#
+#   omaforge.AppImage                     the window (what the menu entry runs)
+#   omaforge.AppImage <command> ...       the command line: update, check, search...
+#   omaforge.AppImage --install-desktop-entry   add omaforge to this user's app menu
+#   omaforge.AppImage --remove-desktop-entry    take it out again
+#
+# Nothing is exported for the app: Python is started with -I and finds its own
+# prefix, and PySide6 finds its Qt plugins and QML modules beside itself, so
+# what omaforge starts (xdg-open, notify-send, the browser) gets the host's
+# environment untouched. No LD_LIBRARY_PATH, PYTHONHOME, QT_PLUGIN_PATH or
+# SSL_CERT_FILE; omaforge finds the system's CA certificates itself.
+#
+# The daily update timer the packages ship is not installed from here.
+
+set -eu
+
+if [ -z "${APPDIR:-}" ]; then
+    # Run from an extracted AppDir rather than the AppImage.
+    APPDIR="$(dirname "$(readlink -f "$0")")"
+fi
+python="$APPDIR/opt/python3.12/bin/python3.12"
+app_id=omaforge
+
+desktop_entry() {
+    action="$1"
+    if [ -z "${APPIMAGE:-}" ]; then
+        echo "omaforge is not running from an AppImage file, so there is nothing for a menu entry to point at." >&2
+        echo "Run the .AppImage itself with $action." >&2
+        exit 1
+    fi
+    data="${XDG_DATA_HOME:-$HOME/.local/share}"
+    apps="$data/applications"
+    icons="$data/icons/hicolor"
+    desktop="$apps/$app_id.desktop"
+
+    if [ "$action" = --install-desktop-entry ]; then
+        mkdir -p "$apps"
+        # Exec quotes the path, which may have spaces.
+        path="$(printf '%s' "$APPIMAGE" | sed 's/[&|\\]/\\&/g')"
+        sed -e "s|^Exec=.*|Exec=\"$path\"|" \
+            -e "/^\[Desktop Entry\]/a TryExec=$path" \
+            "$APPDIR/usr/share/applications/$app_id.desktop" >"$desktop"
+        echo "Wrote $desktop"
+        for dir in "$APPDIR"/usr/share/icons/hicolor/*/apps; do
+            size="$(basename "$(dirname "$dir")")"
+            for file in "$dir"/$app_id.*; do
+                mkdir -p "$icons/$size/apps"
+                cp -f "$file" "$icons/$size/apps/"
+                echo "Wrote $icons/$size/apps/$(basename "$file")"
+            done
+        done
+    else
+        for file in "$desktop" "$icons"/*/apps/$app_id.png "$icons"/*/apps/$app_id.svg; do
+            if [ -e "$file" ]; then
+                rm -f "$file"
+                echo "Removed $file"
+            fi
+        done
+    fi
+
+    # Let the menu and the icon theme notice.
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database "$apps" >/dev/null 2>&1 || true
+    fi
+    if command -v gtk-update-icon-cache >/dev/null 2>&1 && [ -d "$icons" ]; then
+        gtk-update-icon-cache -f -t "$icons" >/dev/null 2>&1 || true
+    fi
+    if [ "$action" = --install-desktop-entry ]; then
+        echo "omaforge is in your app menu. If you move or rename the AppImage, run this again."
+    else
+        echo "omaforge's menu entry is gone. The AppImage itself is untouched."
+    fi
+}
+
+case "${1:-}" in
+    --install-desktop-entry|--remove-desktop-entry) desktop_entry "$1"; exit 0 ;;
+esac
+
+exec "$python" -I -m omaforge "$@"

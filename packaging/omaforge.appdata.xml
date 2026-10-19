@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.ninepointlabs.omaforge</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>omaforge</name>
+  <summary>Install and update World of Warcraft addons</summary>
+  <developer_name>Nine Point Labs</developer_name>
+  <description>
+    <p>
+      omaforge finds every World of Warcraft client in your Wine, Proton, Lutris,
+      Bottles and Heroic prefixes and shows what each one has installed, including
+      addons it did not install itself.
+    </p>
+    <ul>
+      <li>Retail, Classic, Classic Era and every PTR and beta</li>
+      <li>Install and update addons from CurseForge, WoWInterface and GitHub</li>
+      <li>Search and explore popular addons for each game version</li>
+      <li>Back up and restore your WTF settings</li>
+      <li>A command line for scripts, timers and keybindings</li>
+    </ul>
+    <p>
+      Made for Omarchy, where it follows the desktop theme, and at home on any
+      Linux desktop.
+    </p>
+  </description>
+  <launchable type="desktop-id">omaforge.desktop</launchable>
+  <provides>
+    <binary>omaforge</binary>
+  </provides>
+  <url type="homepage">https://omaforge.ninepointlabs.com</url>
+  <url type="bugtracker">https://github.com/ninepointlabs/omaforge/issues</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Installed addons for Retail, with two updates waiting</caption>
+      <image>https://raw.githubusercontent.com/ninepointlabs/omaforge/main/docs/screenshots/installed.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Searching for an addon</caption>
+      <image>https://raw.githubusercontent.com/ninepointlabs/omaforge/main/docs/screenshots/search.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>An addon's details</caption>
+      <image>https://raw.githubusercontent.com/ninepointlabs/omaforge/main/docs/screenshots/details.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.2.5" date="2026-10-17"/>
+  </releases>
+</component>

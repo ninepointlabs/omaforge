@@ -139,7 +139,8 @@ sudo dnf install ./omaforge-*.noarch.rpm
 ```
 
 omaforge appears in the app launcher as **Omaforge**. Outside Omarchy it uses
-its own dark theme and your system's monospace font.
+its own theme, light or dark to match your desktop, and your system's monospace
+font.
 
 ### With autonomix-cli
 
@@ -150,6 +151,40 @@ updated:
 ```sh
 autonomix-cli add https://github.com/ninepointlabs/omaforge
 ```
+
+### Any other Linux (AppImage)
+
+Each release also has an AppImage, `omaforge-<version>-x86_64.AppImage`, with
+its own Python and Qt inside, so nothing else needs installing. It runs on any
+x86_64 Linux with glibc 2.34 or newer (Ubuntu 22.04, Debian 12, Fedora 39,
+openSUSE Leap 15.6, RHEL 9 and newer), and includes the CurseForge key like
+the packages do.
+
+```sh
+chmod +x omaforge-*-x86_64.AppImage
+./omaforge-*-x86_64.AppImage                 # the window
+./omaforge-*-x86_64.AppImage update          # the command line works the same way
+```
+
+To get it in your app menu and dock, let [Gear Lever](https://flathub.org/apps/it.mijorus.gearlever)
+or [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher) take it
+in: they use the menu entry and icons inside, and can update it in place when
+a new release comes out. Without one of those, the AppImage can do it itself:
+
+```sh
+./omaforge-*-x86_64.AppImage --install-desktop-entry   # menu entry and icons, in ~/.local/share
+./omaforge-*-x86_64.AppImage --remove-desktop-entry    # undo it
+```
+
+The entry points at wherever the AppImage is now, so run it again if you move
+the file. The AppImage doesn't install the daily update timer, and
+`omaforge setup omarchy` is for the Arch package; on Omarchy, use that.
+
+The AppImage mounts itself with FUSE. Its runtime carries its own FUSE
+library, so the old advice to install `libfuse2` does not apply; it only needs
+the `fusermount3` (or `fusermount`) helper that desktops ship. If it will not
+start with a message about FUSE, install `fuse3`, or run it with
+`--appimage-extract-and-run`.
 
 ### Anywhere else
 
@@ -314,9 +349,17 @@ The Release workflow then:
   [nfpm](https://nfpm.goreleaser.com) (`packaging/nfpm.yaml`),
 - installs each package on Arch, Debian 13, Ubuntu 26.04 and Fedora and loads
   the UI from it,
-- attaches all three packages to a GitHub release.
+- attaches all three packages to a GitHub release,
+- then builds the AppImage on Ubuntu 22.04 (`.github/workflows/appimage.yml`,
+  same key), checks it with `packaging/appimage/smoke.sh`, and attaches it with
+  its `.zsync` and `.sha256`, adding a line to the release notes.
 
-The key is never committed.
+The key is never committed. To build and check the AppImage locally (in
+Docker, without the key):
+
+```sh
+scripts/build-appimage.sh --test
+```
 
 ## License
 

@@ -112,3 +112,12 @@ jobs:
             "**Fedora:** \`sudo dnf install ./omaforge-$v-1.noarch.rpm\`")
           gh release create "$GITHUB_REF_NAME" omaforge* \
             --repo "$GITHUB_REPOSITORY" --title "omaforge $GITHUB_REF_NAME" --generate-notes --notes "$notes"
+
+  # Built separately on Ubuntu 22.04 (old glibc) and attached once the release exists.
+  appimage:
+    needs: publish
+    uses: ./.github/workflows/appimage.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets:
+      CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}

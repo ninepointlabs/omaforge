@@ -1,0 +1,145 @@
+# The AppImage: built on Ubuntu 22.04, checked, and attached to the release
+# next to the Arch, .deb and .rpm packages. Only adds files: the AppImage, its
+# .zsync and .sha256. It also adds an AppImage line to the release notes.
+#
+# - release.yml calls this after it has published a release.
+#   (GitHub does not start other workflows for a release that a workflow
+#   published, so `release: published` would never fire here.)
+# - "Run workflow" with a tag builds that tag and attaches it.
+# - A pull request that touches packaging builds and checks it, without uploading
+#   and without the CurseForge key.
+
+name: AppImage
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to build and attach to
+        required: true
+        type: string
+    secrets:
+      CURSEFORGE_API_KEY:
+        required: false
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build and attach to (v0.2.6 or later)
+        required: true
+  pull_request:
+    paths:
+      - packaging/**
+      - scripts/build-appimage.sh
+      - omaforge/**
+      - pyproject.toml
+      - .github/workflows/appimage.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || '' }}
+
+      - name: Check the tag
+        if: inputs.tag != ''
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          if [[ ! -f packaging/appimage/build.sh ]]; then
+            # Older tags also lack the CA-certificate lookup, so HTTPS would fail
+            # from their AppImage on Debian, Ubuntu and Arch. Release a new version instead.
+            echo "::error::$TAG predates the AppImage packaging; build v0.2.6 or later."
+            exit 1
+          fi
+          version="$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)"
+          [[ "$TAG" == "v$version" ]] || { echo "::error::$TAG does not match pyproject version $version"; exit 1; }
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update -qq
+          # libfuse2 for appimagelint, which is itself an older AppImage.
+          sed 's/#.*//' packaging/appimage/apt-packages.txt | xargs sudo apt-get install -y -qq --no-install-recommends libfuse2
+
+      - name: Build
+        env:
+          # Embedded (obfuscated) in release builds only, as in the other packages; never on pull requests.
+          OMAFORGE_CURSEFORGE_BUILD_KEY: ${{ github.event_name != 'pull_request' && secrets.CURSEFORGE_API_KEY || '' }}
+        run: packaging/appimage/build.sh
+
+      - name: Check
+        run: packaging/appimage/smoke.sh dist/omaforge-*-x86_64.AppImage
+
+      - name: appimagelint (glibc / libstdc++ compatibility, icons, desktop file)
+        run: |
+          curl -fsSL -o appimagelint.AppImage \
+            https://github.com/TheAssassin/appimagelint/releases/download/continuous/appimagelint-x86_64.AppImage
+          if echo "61dc4ec2d5697249644bb559ac917bd60196bc2eebb9752582f976f717ab7869  appimagelint.AppImage" | sha256sum -c; then
+            chmod +x appimagelint.AppImage
+            # A report, not a gate: it also lists the old distros (glibc < 2.34) this does not aim at.
+            ./appimagelint.AppImage dist/omaforge-*-x86_64.AppImage >appimagelint.log 2>&1 || true
+            cat appimagelint.log
+            { echo '```'; grep -E '\[(✔|✖)\]|WARNING|ERROR' appimagelint.log; echo '```'; } >>"$GITHUB_STEP_SUMMARY"
+          else
+            # Its only release is "continuous"; when it moves, say so rather than run something unpinned.
+            echo "::warning::appimagelint's continuous build changed; update the pinned sha256 to run it."
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: |
+            dist/omaforge-*-x86_64.AppImage
+            dist/omaforge-*-x86_64.AppImage.zsync
+            dist/omaforge-*-x86_64.AppImage.sha256
+          if-no-files-found: error
+
+  attach:
+    needs: build
+    if: inputs.tag != ''
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: appimage
+          path: out
+
+      - name: Assets before
+        run: gh release view "$TAG" --json assets --jq '.assets[].name' | sort | tee before.txt
+
+      - name: Attach the AppImage, .zsync and .sha256
+        working-directory: out
+        run: gh release upload "$TAG" omaforge-*-x86_64.AppImage omaforge-*-x86_64.AppImage.zsync omaforge-*-x86_64.AppImage.sha256 --clobber
+
+      - name: Mention it in the release notes
+        run: |
+          gh release view "$TAG" --json body --jq .body >notes.md
+          if ! grep -q AppImage notes.md; then
+            image="omaforge-${TAG#v}-x86_64.AppImage"
+            {
+              echo
+              echo "**Any other Linux (AppImage):** download \`$image\`, \`chmod +x\` it and run it. \`--install-desktop-entry\` adds it to your app menu; [Gear Lever](https://flathub.org/apps/it.mijorus.gearlever) and AppImageLauncher can also take it in and keep it updated."
+            } >extra.md
+            if ! grep -q autonomix-cli notes.md; then
+              printf '\n%s\n' "**With [autonomix-cli](https://github.com/ninepointlabs/autonomix-cli):** \`autonomix-cli add https://github.com/ninepointlabs/omaforge\`" >>extra.md
+            fi
+            cat notes.md extra.md >new-notes.md
+            gh release edit "$TAG" --notes-file new-notes.md
+          fi
+
+      - name: Assets after (only additions)
+        run: |
+          gh release view "$TAG" --json assets --jq '.assets[].name' | sort | tee after.txt
+          missing="$(comm -23 before.txt after.txt)"
+          [[ -z "$missing" ]] || { echo "::error::assets disappeared: $missing"; exit 1; }
+          echo "Added:"; comm -13 before.txt after.txt
