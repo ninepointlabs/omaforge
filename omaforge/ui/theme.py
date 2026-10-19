@@ -3,14 +3,18 @@
 Omarchy writes the current theme to ~/.local/state/omarchy/current/theme/
 (`omarchy theme set` replaces the directory), so the file, its directory and
 the parent are all watched.
+
+Without an Omarchy theme the built-in palette is used: dark, or light when the
+desktop prefers light (the freedesktop color-scheme setting, which Qt reads),
+following it if it changes.
 """
 
 import shutil
 import subprocess
 import tomllib
 
-from PySide6.QtCore import Property, QFileSystemWatcher, QObject, QTimer, Signal
-from PySide6.QtGui import QColor, QFontDatabase
+from PySide6.QtCore import Property, QFileSystemWatcher, QObject, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QFontDatabase, QGuiApplication
 
 from omaforge import paths
 
@@ -23,6 +27,21 @@ DEFAULTS = {
     "green": "#8fbf6a",
     "yellow": "#e0af68",
 }
+
+LIGHT_DEFAULTS = {
+    "background": "#f5f5f5",
+    "foreground": "#2b2b2b",
+    "accent": "#2f5fbf",
+    "selection": "#d6e0f5",
+    "red": "#b03a3a",
+    "green": "#4f7a32",
+    "yellow": "#9a6a16",
+}
+
+
+def system_prefers_light() -> bool:
+    app = QGuiApplication.instance()
+    return app is not None and app.styleHints().colorScheme() == Qt.ColorScheme.Light
 
 
 def _mix(a: str, b: str, amount: float) -> str:
@@ -60,6 +79,8 @@ class Theme(QObject):
         self._debounce.timeout.connect(self._reload)
         self._watcher.fileChanged.connect(lambda _: self._debounce.start())
         self._watcher.directoryChanged.connect(lambda _: self._debounce.start())
+        if QGuiApplication.instance() is not None:
+            QGuiApplication.instance().styleHints().colorSchemeChanged.connect(lambda _: self._debounce.start())
         self._reload()
 
     def _reload(self) -> None:
@@ -72,7 +93,8 @@ class Theme(QObject):
             mode = data.get("mode")
             colors.update({k: v for k, v in data.items() if isinstance(v, str) and v.startswith("#")})
         except (OSError, tomllib.TOMLDecodeError):
-            pass
+            if system_prefers_light():
+                colors = dict(LIGHT_DEFAULTS)
         self._c = colors
         if mode in ("dark", "light"):
             self._dark = mode == "dark"

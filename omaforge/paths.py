@@ -29,6 +29,16 @@ def state_dir() -> Path:
 
 
 def omarchy_theme_dir() -> Path:
-    """The active Omarchy theme, as `omarchy theme set` materialises it."""
+    """The active Omarchy theme, as `omarchy theme set` materialises it.
+
+    Older Omarchy kept it under ~/.config/omarchy/current/theme; that is used
+    only when the state one is absent and the old one is there.
+    """
     state = os.environ.get("XDG_STATE_HOME") or str(Path.home() / ".local/state")
-    return Path(state) / "omarchy/current/theme"
+    current = Path(state) / "omarchy/current/theme"
+    if not current.parent.exists():
+        config = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
+        legacy = Path(config) / "omarchy/current/theme"
+        if legacy.exists():
+            return legacy
+    return current

@@ -25,7 +25,10 @@ def run(argv: list[str] | None = None) -> int:
     QCoreApplication.setOrganizationName("omaforge")
     QGuiApplication.setDesktopFileName("omaforge")  # Wayland app_id; matches the .desktop file
     QGuiApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    app = QGuiApplication(argv if argv is not None else sys.argv)
+    argv = list(argv if argv is not None else sys.argv)
+    # On X11 the WM_CLASS instance is argv[0]'s name (`__main__.py` under `python -m`,
+    # the file name for the AppImage); docks match it against StartupWMClass=omaforge.
+    app = QGuiApplication(["omaforge", *argv[1:]])
     if ICON.exists():
         app.setWindowIcon(QIcon(str(ICON)))
 
@@ -48,8 +51,10 @@ def run(argv: list[str] | None = None) -> int:
         # Used by the release workflow against the installed package.
         backend.shutdown()
         print("omaforge: interface loaded")
+        del engine  # before the objects QML reads, or its bindings see them vanish first
         return 0
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     code = app.exec()
     backend.shutdown()
+    del engine
     return code
