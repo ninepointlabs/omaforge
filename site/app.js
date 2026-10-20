@@ -223,6 +223,7 @@
         arch: (n) => n.endsWith(".pkg.tar.zst"),
         deb: (n) => n.endsWith(".deb"),
         rpm: (n) => n.endsWith(".rpm"),
+        appimage: (n) => n.endsWith(".AppImage"),
       };
       $$("[data-version]").forEach((el) => (el.textContent = rel.tag_name));
       for (const [key, test] of Object.entries(match)) {
