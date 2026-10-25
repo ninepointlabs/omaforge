@@ -30,6 +30,10 @@ DEFAULTS: dict = {
 }
 
 
+class ConfigError(Exception):
+    pass
+
+
 def config_path() -> Path:
     return paths.config_dir() / "config.toml"
 
@@ -51,6 +55,8 @@ def load(path: Path | None = None) -> dict:
             user = tomllib.load(fh)
     except FileNotFoundError:
         user = {}
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigError(f"{path}: {e}") from None
     cfg = _merge(DEFAULTS, user)
     # Environment wins for secrets so CI/timers need not write them to disk.
     env = {

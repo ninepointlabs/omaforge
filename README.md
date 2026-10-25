@@ -258,7 +258,7 @@ omaforge search weakauras --sort downloads
 omaforge install curseforge:2382 github:DeadlyBossMods/DeadlyBossMods wowi:11190
 omaforge pin|unpin|ignore|unignore <addon>
 omaforge channel <addon> beta
-omaforge uninstall <addon>
+omaforge uninstall <addon>        # asks first for unknown addons; --yes skips
 omaforge backup [create|list|restore <id>]
 omaforge export retail.json && omaforge import retail.json -c forever
 omaforge setup omarchy [--keybind KEYS] [--remove]

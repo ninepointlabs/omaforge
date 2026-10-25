@@ -499,7 +499,7 @@ class Manager:
         }
 
     def import_list(self, client: Client, data: dict, progress=None) -> list[UpdateResult]:
-        if data.get("format") != EXPORT_FORMAT:
+        if not isinstance(data, dict) or data.get("format") != EXPORT_FORMAT:
             raise ManagerError("not an omaforge addon list")
         installed = {a.key for a in self.installed(client)}
         out = []

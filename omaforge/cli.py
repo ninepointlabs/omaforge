@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 from omaforge import __version__
+from omaforge.config import ConfigError
 from omaforge.core.backup import BackupError
 from omaforge.core.http import HttpError
 from omaforge.core.install import InstallError
@@ -235,13 +236,29 @@ def cmd_install(m: Manager, args) -> int:
     return rc
 
 
+def _confirm(question: str) -> bool:
+    if not sys.stdin.isatty():
+        print(f"{question} Not a terminal, so pass --yes to confirm.", file=sys.stderr)
+        return False
+    try:
+        return input(f"{question} [y/N] ").strip().lower() in ("y", "yes")
+    except EOFError:
+        return False
+
+
 def cmd_uninstall(m: Manager, args) -> int:
     client = m.client(args.client)
+    rc = 0
     for ref in args.addons:
         a = _find_addon(m, client, ref)
+        if not a.provider and not args.yes and not _confirm(
+                f"{a.name} is unknown to omaforge; remove {', '.join(a.folders)}?"):
+            print(f"skipped {a.name}", file=sys.stderr)
+            rc = 1
+            continue
         removed = m.uninstall(client, a.key)
         _out(args, {"key": a.key, "removed": removed}, f"removed {a.name}: {', '.join(removed)}")
-    return 0
+    return rc
 
 
 def cmd_pref(m: Manager, args) -> int:
@@ -288,8 +305,13 @@ def cmd_export(m: Manager, args) -> int:
 
 
 def cmd_import(m: Manager, args) -> int:
+    try:
+        data = json.loads(sys.stdin.read() if args.file == "-" else Path(args.file).read_text())
+    except OSError as e:
+        raise ManagerError(f"cannot read {args.file}: {e.strerror}") from None
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        raise ManagerError(f"{args.file} is not valid JSON: {e}") from None
     client = m.client(args.client)
-    data = json.loads(sys.stdin.read() if args.file == "-" else Path(args.file).read_text())
     progress = None if args.json else (lambda e: print(f"installing {e.get('name', e['id'])}", flush=True))
     results = m.import_list(client, data, progress)
     lines = [f"{'ok      ' if r.ok else 'failed  '}{r.name}: {r.new or r.skipped or r.error}" for r in results]
@@ -384,6 +406,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(fn=cmd_install)
     s = sub.add_parser("uninstall", parents=[common], help="remove addons and all their folders")
     s.add_argument("addons", nargs="+")
+    s.add_argument("-y", "--yes", action="store_true", help="don't ask before removing unknown addons")
     s.set_defaults(fn=cmd_uninstall)
     for name, desc in (("pin", "keep an addon at its version"), ("unpin", "allow updates again"),
                        ("ignore", "hide an addon from update checks"), ("unignore", "check it again")):
@@ -429,7 +452,7 @@ def main(argv: list[str]) -> int:
         if args.offline:
             m.http.offline = True
         return args.fn(m, args)
-    except (ManagerError, ProviderError, HttpError, InstallError, BackupError) as e:
+    except (ManagerError, ProviderError, HttpError, InstallError, BackupError, ConfigError) as e:
         print(f"omaforge: {e}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:
