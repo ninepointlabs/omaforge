@@ -24,6 +24,8 @@ class Client:
     channel: str
     verified: bool
     notes: list[str] = field(default_factory=list)
+    # Listed in .build.info without a version: downloaded ahead of a launch.
+    preinstalled: bool = False
 
     @property
     def path(self) -> Path:
@@ -42,6 +44,10 @@ class Client:
         """Stable id: the client folder plus a short hash of its root."""
         digest = hashlib.sha1(str(self.root).encode()).hexdigest()[:8]
         return f"{self.folder.strip('_')}@{digest}"
+
+    @property
+    def version_text(self) -> str:
+        return self.version or ("not installed yet" if self.preinstalled else "?")
 
     @property
     def interface(self) -> int | None:
@@ -68,6 +74,7 @@ class Client:
             "channel": self.channel,
             "verified": self.verified,
             "notes": list(self.notes),
+            "preinstalled": self.preinstalled,
         }
 
 
@@ -156,7 +163,15 @@ def _children(path: Path) -> list[Path]:
 
 
 def is_client_dir(path: Path) -> bool:
-    return bool(CLIENT_DIR.match(path.name)) and (path / "Interface" / "AddOns").is_dir()
+    """A client folder: one with addons, or a game client that hasn't been run yet."""
+    if not CLIENT_DIR.match(path.name):
+        return False
+    if (path / "Interface" / "AddOns").is_dir() or (path / ".flavor.info").is_file():
+        return True
+    try:
+        return any(p.name.lower().startswith("wow") and p.name.lower().endswith(".exe") for p in path.iterdir())
+    except OSError:
+        return False
 
 
 def find_roots(extra: list[str] | None = None, autodetect: bool = True, home: Path | None = None) -> list[Path]:
@@ -189,18 +204,24 @@ def clients_in_root(root: Path, table: FlavorTable) -> list[Client]:
         product = buildinfo.read_flavor(child)
         if not product:
             # No .flavor.info: guess the product from the folder name.
-            product = "wow" if child.name == "_retail_" else "wow" + child.name.rstrip("_")
+            product = table.folder_product(child.name)
             notes.append(f"no .flavor.info; product guessed from folder name as {product!r}")
         version = builds.get(product, {}).get("version", "")
-        if not version:
+        preinstalled = product in builds and not version
+        if preinstalled:
+            notes.append(f"product {product!r} is in .build.info without a version; not installed yet")
+        elif not version:
             notes.append(f"product {product!r} not listed in .build.info; version unknown")
+        if not (child / "Interface" / "AddOns").is_dir():
+            notes.append("no Interface/AddOns folder yet; it is created on the first install")
         res = table.resolve(product, parse_version(version))
         if res is None:
             notes.append(f"no flavor rule matches product {product!r} version {version or '?'}")
-            clients.append(Client(root, child.name, product, version, None, "live", False, notes))
+            clients.append(Client(root, child.name, product, version, None, "live", False, notes, preinstalled))
             continue
         clients.append(
-            Client(root, child.name, product, version, res.game, res.channel, res.verified, notes + list(res.notes))
+            Client(root, child.name, product, version, res.game, res.channel, res.verified,
+                   notes + list(res.notes), preinstalled)
         )
     return clients
 

@@ -33,6 +33,20 @@ def wow_root(tmp_path) -> Path:
     return root
 
 
+@pytest.fixture
+def forever_root(wow_root) -> Path:
+    """wow_root plus the Forever release client as Battle.net pre-installs it.
+
+    `_forever_` has `.flavor.info` = wowf and the game files, but no Interface
+    or WTF (the game hasn't been run), and its `.build.info` row has no version.
+    """
+    shutil.copytree(FIXTURES / "forever/_forever_", wow_root / "_forever_")
+    (wow_root / "_forever_/Wow.exe").write_bytes(b"")
+    with open(wow_root / ".build.info", "a") as fh:
+        fh.write((FIXTURES / "forever/build-info-row").read_text())
+    return wow_root
+
+
 def make_addon(parent: Path, name: str, toc: str = "", files: dict[str, str] | None = None, suffix: str = "") -> Path:
     folder = parent / name
     folder.mkdir(parents=True, exist_ok=True)

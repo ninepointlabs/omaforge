@@ -50,6 +50,22 @@ def test_same_version():
     assert same_version("version", "version")
 
 
+def test_forever_prefers_release_over_beta(forever_root, tmp_path):
+    m = World(forever_root, tmp_path).m
+    assert m.client("forever").folder == "_forever_"
+    assert m.client("classic_beta").folder == "_classic_beta_"
+    assert m.client(None).folder == "_retail_"
+
+
+def test_install_into_unrun_client_creates_addons_dir(forever_root, tmp_path):
+    w = World(forever_root, tmp_path)
+    w.publish("v1", ["Foo"])
+    forever = w.m.client("forever")
+    assert w.m.installed(forever) == []
+    assert w.m.install(forever, "github", "o/Foo")["folders"] == ["Foo"]
+    assert (forever_root / "_forever_/Interface/AddOns/Foo").is_dir()
+
+
 def test_client_selection(world):
     assert world.m.client("forever").folder == "_classic_beta_"
     assert world.m.client("classic_beta").folder == "_classic_beta_"

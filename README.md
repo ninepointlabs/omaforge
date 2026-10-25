@@ -296,14 +296,20 @@ to install. To add a branch without a code change, put rules in
 
 **World of Warcraft: Forever**
 
+- The release client is `_forever_`, product `wowf`. Battle.net can install
+  it before launch; until the game has been run it has no `Interface/AddOns`
+  folder, and its version may be blank in `.build.info`. omaforge lists it
+  anyway (`not installed yet`) and creates `Interface/AddOns` on the first
+  addon install.
 - The beta client is `_classic_beta_`, product `wow_classic_beta`, version
-  1.60.x (interface 16001).
+  1.60.x (interface 16001). With both installed, `-c forever` picks the
+  release client and `-c classic_beta` the beta.
 - The BigWigs packager builds for it as flavor `forever` (alias `camelot`),
   with `_Camelot` TOC files.
 - CurseForge lists it as game version type 88568.
 - Whether the client also reads `_Classic` TOCs hasn't been confirmed.
-- The live client's product id is unknown, so any client in the 1.60 range is
-  treated as Forever. That rule is marked unverified.
+- Any other client in the 1.60 range (a future PTR, say) is treated as
+  Forever by an unverified rule.
 - WoWInterface can't tell Forever and Classic Era addons apart, so its Forever
   lists include Classic Era addons.
 

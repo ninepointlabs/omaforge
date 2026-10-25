@@ -65,7 +65,7 @@ def _notify(summary: str, body: str) -> None:
 
 def cmd_clients(m: Manager, args) -> int:
     clients = m.clients()
-    rows = [[c.key, c.label, c.version or "?", str(c.interface or "?"), c.product, str(c.path)] for c in clients]
+    rows = [[c.key, c.label, c.version_text, str(c.interface or "?"), c.product, str(c.path)] for c in clients]
     text = _table(rows, ["KEY", "CLIENT", "VERSION", "INTERFACE", "PRODUCT", "PATH"]) if rows else "no clients found"
     notes = [f"  {c.key}: {n}" for c in clients for n in c.notes]
     if notes and not args.json:
@@ -98,7 +98,7 @@ def cmd_list(m: Manager, args) -> int:
                          "x" if not a.loadable else ""])
         rows.append([a.name, a.version or "?", _status(a), source, a.match or "", a.channel, flags,
                      str(len(a.folders))])
-    text = f"{client.label} ({client.version}) - {len(addons)} addons\n\n"
+    text = f"{client.label} ({client.version_text}) - {len(addons)} addons\n\n"
     text += _table(rows, ["NAME", "VERSION", "STATUS", "SOURCE", "MATCH", "CHANNEL", "FLAGS", "DIRS"]) if rows else "(none)"
     if rows:
         text += "\n\nFLAGS: P pinned, I ignored, ! may be out of date, x not loadable by this client"

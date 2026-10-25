@@ -25,6 +25,20 @@ def test_clients_and_list_json(wow_root, capsys):
     assert [(a["name"], a["version"], a["provider"]) for a in data["addons"]] == [("Local", "2", None)]
 
 
+def test_clients_lists_unrun_forever_client(forever_root, capsys):
+    setup(forever_root)
+    assert cli.main(["clients"]) == 0
+    out = capsys.readouterr().out
+    row = next(line for line in out.splitlines() if line.startswith("forever@"))
+    assert "Forever" in row and "not installed yet" in row and "wowf" in row
+    assert cli.main(["clients", "--json"]) == 0
+    forever = next(c for c in json.loads(capsys.readouterr().out) if c["folder"] == "_forever_")
+    assert (forever["game"], forever["channel"], forever["version"], forever["preinstalled"]) == ("forever", "live", "", True)
+    assert cli.main(["list", "-c", "forever"]) == 0
+    assert capsys.readouterr().out.startswith("Forever (not installed yet) - 0 addons")
+    assert not (forever_root / "_forever_/Interface").exists()
+
+
 def test_pin_uninstall_and_update_all(wow_root, capsys):
     setup(wow_root)
     addons = wow_root / "_retail_/Interface/AddOns"

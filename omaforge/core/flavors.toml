@@ -11,6 +11,14 @@
 #
 # `verified = false` marks values that were guessed rather than observed.
 
+# --- Folders ---------------------------------------------------------------
+# The product id to assume for a client folder that has no `.flavor.info`.
+# Other folders guess `wow` + the folder name (`_classic_` -> `wow_classic`).
+
+[folders]
+_retail_ = "wow"
+_forever_ = "wowf"
+
 # --- Games -----------------------------------------------------------------
 # toc_suffixes    TOC file suffixes the client reads, most specific first
 #                 (Addon_Mainline.toc / Addon-Mainline.toc). Addon.toc is
@@ -77,9 +85,10 @@ curseforge_version_type = 79434
 verified = true
 
 [[game]]
-# World of Warcraft: Forever. The beta client was observed as product
-# `wow_classic_beta`, folder `_classic_beta_`, version 1.60.1.70009
-# (interface 16001). The BigWigs packager (release.sh) names the TOC suffix
+# World of Warcraft: Forever. The release client was observed as product
+# `wowf`, folder `_forever_`, version 1.60.1.70532 (pre-installed before the
+# November 2026 launch). The beta client was product `wow_classic_beta`,
+# folder `_classic_beta_`, version 1.60.1.70009 (interface 16001). The BigWigs packager (release.sh) names the TOC suffix
 # `_Camelot` (Forever's codename), the release.json flavor `forever` (alias
 # `camelot`) and the CurseForge game version type 88568. Whether the client
 # also reads `_Classic` TOCs is a guess.
@@ -106,7 +115,15 @@ verified = false
 # channel: live, ptr, xptr, beta. `version` is a list of comparisons that
 # must all hold against the client's version from .build.info.
 
-# Forever first: its beta shares the generic classic beta product id.
+[[rule]]
+# The Forever release client.
+products = ["wowf"]
+game = "forever"
+channel = "live"
+verified = true
+
+# Forever beta: it shares the generic classic beta product id, so it goes
+# before the Progression Classic rules.
 [[rule]]
 products = ["wow_classic_beta", "wow_classic_ptr", "wow_classic_era_beta", "wow_classic_era_ptr"]
 version = [">=1.60", "<2"]
@@ -115,12 +132,11 @@ channel = "beta"
 verified = true
 
 [[rule]]
-# Guess: the live Forever client's product id is not known yet. Any live
-# client in the 1.60+ range is treated as Forever.
+# Guess: Forever products not seen yet (a PTR, say). Any other client in the
+# 1.60+ range is treated as Forever; the channel follows the product id.
 products = ["*"]
 version = [">=1.60", "<2"]
 game = "forever"
-channel = "live"
 verified = false
 
 [[rule]]
