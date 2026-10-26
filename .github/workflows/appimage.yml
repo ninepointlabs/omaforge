@@ -124,15 +124,17 @@ jobs:
       - name: Mention it in the release notes
         run: |
           gh release view "$TAG" --json body --jq .body >notes.md
-          if ! grep -q AppImage notes.md; then
-            image="omaforge-${TAG#v}-x86_64.AppImage"
-            {
-              echo
-              echo "**Any other Linux (AppImage):** download \`$image\`, \`chmod +x\` it and run it. \`--install-desktop-entry\` adds it to your app menu; [Gear Lever](https://flathub.org/apps/it.mijorus.gearlever) and AppImageLauncher can also take it in and keep it updated."
-            } >extra.md
-            if ! grep -q autonomix-cli notes.md; then
-              printf '\n%s\n' "**With [autonomix-cli](https://github.com/ninepointlabs/autonomix-cli):** \`autonomix-cli add https://github.com/ninepointlabs/omaforge\`" >>extra.md
-            fi
+          image="omaforge-${TAG#v}-x86_64.AppImage"
+          : >extra.md
+          # Look for the file name, not the word: generated notes list PR titles,
+          # and one that says "AppImage" would hide the install line.
+          if ! grep -qF "$image" notes.md; then
+            printf '\n%s\n' "**Any other Linux (AppImage):** download \`$image\`, \`chmod +x\` it and run it. \`--install-desktop-entry\` adds it to your app menu; [Gear Lever](https://flathub.org/apps/it.mijorus.gearlever) and AppImageLauncher can also take it in and keep it updated." >>extra.md
+          fi
+          if ! grep -qF "autonomix-cli add https://github.com/ninepointlabs/omaforge" notes.md; then
+            printf '\n%s\n' "**With [autonomix-cli](https://github.com/ninepointlabs/autonomix-cli):** \`autonomix-cli add https://github.com/ninepointlabs/omaforge\`" >>extra.md
+          fi
+          if [[ -s extra.md ]]; then
             cat notes.md extra.md >new-notes.md
             gh release edit "$TAG" --notes-file new-notes.md
           fi
