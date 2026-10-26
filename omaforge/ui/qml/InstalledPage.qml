@@ -32,8 +32,18 @@ ColumnLayout {
         + (backend.checked ? " · " + (backend.updateCount ? backend.updateCount + " to update" : "all up to date") : "")
 
     function focusFilter() { filterField.forceActiveFocus() }
+    function askRemove(a) {
+        page.confirm("Remove " + a.name + "?",
+            "This deletes " + a.folders.length + " folder" + (a.folders.length === 1 ? "" : "s")
+            + " from Interface/AddOns:\n" + a.folders.join(", ")
+            + "\n\nSaved settings in WTF are kept.",
+            "Remove", true, function () { backend.uninstall(a.key) })
+    }
 
     RowLayout {
+        id: toolbar
+        // Import and Export go into a menu when the full toolbar doesn't fit.
+        readonly property bool roomy: width >= 640
         Layout.fillWidth: true
         Layout.margins: 16
         Layout.bottomMargin: 8
@@ -41,20 +51,35 @@ ColumnLayout {
 
         Field {
             id: filterField
-            Layout.preferredWidth: 260
+            Layout.fillWidth: true
+            Layout.maximumWidth: 260
+            Layout.minimumWidth: 100
             placeholderText: "Filter addons  (Ctrl+F)"
             onTextChanged: page.filter = text
             Keys.onEscapePressed: text = ""
         }
         Item { Layout.fillWidth: true }
-        Btn { text: "Import…"; subtle: true; onClicked: page.importRequested() }
-        Btn { text: "Export…"; subtle: true; onClicked: page.exportRequested() }
-        Btn { text: "Check for updates"; enabled: !backend.busy; onClicked: backend.checkUpdates() }
+        Btn { text: "Import…"; subtle: true; visible: toolbar.roomy; onClicked: page.importRequested() }
+        Btn { text: "Export…"; subtle: true; visible: toolbar.roomy; onClicked: page.exportRequested() }
+        Btn {
+            text: toolbar.roomy ? "Check for updates" : "Check"
+            enabled: !backend.busy
+            onClicked: backend.checkUpdates()
+            ToolTip.visible: hovered && !toolbar.roomy
+            ToolTip.delay: 600
+            ToolTip.text: "Check for updates (Ctrl+R)"
+        }
         Btn {
             text: backend.updateCount ? "Update all (" + backend.updateCount + ")" : "Update all"
             primary: true
             enabled: backend.updateCount > 0 && !backend.busy
             onClicked: backend.updateAll()
+        }
+        MenuBtn {
+            objectName: "installedMore"
+            visible: !toolbar.roomy
+            MenuItem { text: "Import…"; onTriggered: page.importRequested() }
+            MenuItem { text: "Export…"; onTriggered: page.exportRequested() }
         }
     }
 
@@ -74,6 +99,8 @@ ColumnLayout {
             required property var modelData
             readonly property var a: modelData
             readonly property bool canUpdate: a.update_available && !a.pinned && !a.ignored
+            // Narrow rows keep Update and put channel, Pin, Ignore and Remove in a menu.
+            readonly property bool roomy: width >= 820
             width: list.width
             height: 58
             color: hover.hovered ? theme.surface : "transparent"
@@ -132,7 +159,7 @@ ColumnLayout {
 
                 ColumnLayout {
                     spacing: 3
-                    Layout.preferredWidth: 130
+                    Layout.preferredWidth: row.roomy ? 130 : 96
                     Label2 {
                         Layout.fillWidth: true
                         horizontalAlignment: Text.AlignRight
@@ -145,12 +172,13 @@ ColumnLayout {
                         color: row.a.update_available ? theme.accent : theme.dim
                         text: row.a.ignored ? "ignored"
                               : row.a.update_available ? "→ " + row.a.latest.version + (row.a.pinned ? " (pinned)" : "")
+                              : !row.roomy && row.a.pinned ? "pinned"
                               : row.a.latest ? "up to date" : ""
                     }
                 }
 
                 Choice {
-                    visible: !!row.a.provider
+                    visible: row.roomy && !!row.a.provider
                     model: ["stable", "beta", "alpha"]
                     currentIndex: Math.max(0, model.indexOf(row.a.channel))
                     onActivated: function (i) { backend.setChannel(row.a.key, model[i]) }
@@ -158,10 +186,11 @@ ColumnLayout {
                     ToolTip.delay: 600
                     ToolTip.text: "Release channel"
                 }
-                Item { visible: !row.a.provider; Layout.preferredWidth: 92 }
+                Item { visible: row.roomy && !row.a.provider; Layout.preferredWidth: 92 }
 
                 Btn {
                     text: row.a.pinned ? "Pinned" : "Pin"
+                    visible: row.roomy
                     subtle: true
                     active: row.a.pinned
                     Layout.preferredWidth: 74
@@ -172,6 +201,7 @@ ColumnLayout {
                 }
                 Btn {
                     text: row.a.ignored ? "Ignored" : "Ignore"
+                    visible: row.roomy
                     subtle: true
                     active: row.a.ignored
                     Layout.preferredWidth: 78
@@ -185,19 +215,30 @@ ColumnLayout {
                     primary: true
                     Layout.preferredWidth: 78
                     opacity: row.canUpdate ? 1 : 0
+                    visible: row.roomy || row.canUpdate
                     enabled: row.canUpdate && !backend.busy
                     onClicked: backend.updateAddon(row.a.key)
                 }
                 Btn {
                     text: "Remove"
+                    visible: row.roomy
                     subtle: true
                     danger: true
                     enabled: !backend.busy
-                    onClicked: page.confirm("Remove " + row.a.name + "?",
-                        "This deletes " + row.a.folders.length + " folder" + (row.a.folders.length === 1 ? "" : "s")
-                        + " from Interface/AddOns:\n" + row.a.folders.join(", ")
-                        + "\n\nSaved settings in WTF are kept.",
-                        "Remove", true, function () { backend.uninstall(row.a.key) })
+                    onClicked: page.askRemove(row.a)
+                }
+                MenuBtn {
+                    objectName: "rowMore"
+                    visible: !row.roomy
+                    MenuItem { text: row.a.pinned ? "Unpin" : "Pin this version"; onTriggered: backend.setPinned(row.a.key, !row.a.pinned) }
+                    MenuItem { text: row.a.ignored ? "Stop ignoring" : "Ignore updates"; onTriggered: backend.setIgnored(row.a.key, !row.a.ignored) }
+                    // Hidden menu items still take a line, so they also get no height.
+                    MenuSeparator { visible: !!row.a.provider; height: visible ? implicitHeight : 0 }
+                    MenuItem { text: "Stable channel"; visible: !!row.a.provider; height: visible ? implicitHeight : 0; checkable: true; checked: row.a.channel === "stable"; onTriggered: backend.setChannel(row.a.key, "stable") }
+                    MenuItem { text: "Beta channel"; visible: !!row.a.provider; height: visible ? implicitHeight : 0; checkable: true; checked: row.a.channel === "beta"; onTriggered: backend.setChannel(row.a.key, "beta") }
+                    MenuItem { text: "Alpha channel"; visible: !!row.a.provider; height: visible ? implicitHeight : 0; checkable: true; checked: row.a.channel === "alpha"; onTriggered: backend.setChannel(row.a.key, "alpha") }
+                    MenuSeparator {}
+                    MenuItem { text: "Remove…"; enabled: !backend.busy; onTriggered: page.askRemove(row.a) }
                 }
             }
         }

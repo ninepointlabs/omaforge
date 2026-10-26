@@ -36,6 +36,16 @@ ScrollView {
         spacing: 10
 
         Item { height: 6 }
+        Label2 {
+            objectName: "settingsBroken"
+            Layout.fillWidth: true
+            visible: page.s.error !== ""
+            color: theme.red
+            wrapMode: Text.WordWrap
+            elide: Text.ElideNone
+            text: "These are the defaults, not your settings. Saving is off so the unreadable file is not "
+                  + "written over; fix it, or set it aside from the message above."
+        }
         SectionTitle { text: "World of Warcraft installs" }
         Label2 {
             Layout.fillWidth: true
@@ -50,7 +60,7 @@ ScrollView {
             delegate: RowLayout {
                 required property var modelData
                 Layout.fillWidth: true
-                Label2 { text: modelData; Layout.fillWidth: true; elide: Text.ElideMiddle }
+                Label2 { text: modelData; Layout.fillWidth: true; Layout.minimumWidth: 60; elide: Text.ElideMiddle }
                 Label2 { text: page.s.roots.indexOf(modelData) >= 0 ? "added by hand" : "detected"; dim: true; font.pixelSize: 11 }
                 Btn { text: "Open"; subtle: true; onClicked: backend.openPath(modelData) }
                 Btn {
@@ -62,9 +72,10 @@ ScrollView {
                 }
             }
         }
-        RowLayout {
+        Flow {
+            Layout.fillWidth: true
             spacing: 8
-            Btn { text: "Add folder…"; onClicked: page.addFolderRequested() }
+            Btn { text: "Add folder…"; enabled: page.s.error === ""; onClicked: page.addFolderRequested() }
             Btn { text: "Rescan"; subtle: true; onClicked: backend.rescan() }
             Check { id: autodetect; text: "Detect installs automatically" }
         }
@@ -105,7 +116,7 @@ ScrollView {
 
         Item { height: 10 }
         SectionTitle { text: "Backups" }
-        Check { id: beforeUpdate; text: "Back up WTF before updating several addons at once" }
+        Check { id: beforeUpdate; Layout.fillWidth: true; text: "Back up WTF before updating several addons at once" }
         RowLayout {
             spacing: 10
             Label2 { text: "Keep the last" }
@@ -125,14 +136,15 @@ ScrollView {
 
         Item { height: 10 }
         SectionTitle { text: "Network" }
-        Check { id: offline; text: "Offline mode: use cached addon data only" }
+        Check { id: offline; Layout.fillWidth: true; text: "Offline mode: use cached addon data only" }
 
         Item { height: 10 }
         RowLayout {
             Btn {
+                objectName: "saveSettings"
                 text: "Save settings"
                 primary: true
-                enabled: !backend.busy
+                enabled: !backend.busy && page.s.error === ""
                 onClicked: backend.saveSettings({
                     autodetect: autodetect.checked,
                     githubToken: ghToken.text,

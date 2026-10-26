@@ -7,13 +7,19 @@ ColumnLayout {
     spacing: 0
     signal confirm(string title, string message, string confirmText, bool dangerous, var action)
 
-    RowLayout {
+    // The buttons go under the text when narrow.
+    GridLayout {
+        id: bar
+        readonly property bool roomy: width >= 640
         Layout.fillWidth: true
         Layout.margins: 16
         Layout.bottomMargin: 8
-        spacing: 8
+        columns: roomy ? 3 : 2
+        columnSpacing: 8
+        rowSpacing: 8
         Label2 {
             Layout.fillWidth: true
+            Layout.columnSpan: bar.roomy ? 1 : 2
             dim: true
             wrapMode: Text.WordWrap
             elide: Text.ElideNone

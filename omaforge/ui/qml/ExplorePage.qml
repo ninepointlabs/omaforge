@@ -19,25 +19,40 @@ ColumnLayout {
         backend.loadExplore(backend.exploreProvider, backend.exploreSort, backend.exploreCategory)
     }
 
-    RowLayout {
+    // Sources on the left and the pickers on the right; the pickers get a line of their own when narrow.
+    GridLayout {
+        id: bar
+        readonly property bool roomy: width >= 640
         Layout.fillWidth: true
         Layout.margins: 16
         Layout.bottomMargin: 8
-        spacing: 8
+        columns: roomy ? 3 : 2
+        columnSpacing: 8
+        rowSpacing: 8
 
-        Repeater {
-            model: backend.exploreSources
-            delegate: Btn {
-                required property var modelData
-                text: modelData.label
-                subtle: true
-                active: backend.exploreProvider === modelData.name
-                onClicked: backend.loadExplore(modelData.name, backend.exploreSort, "")
+        RowLayout {
+            Layout.row: 0
+            Layout.column: 0
+            Layout.columnSpan: bar.roomy ? 1 : 2
+            Layout.fillWidth: true
+            spacing: 8
+            Repeater {
+                model: backend.exploreSources
+                delegate: Btn {
+                    required property var modelData
+                    text: modelData.label
+                    subtle: true
+                    active: backend.exploreProvider === modelData.name
+                    onClicked: backend.loadExplore(modelData.name, backend.exploreSort, "")
+                }
             }
+            Item { Layout.fillWidth: true }
         }
-        Item { Layout.fillWidth: true }
         Choice {
             id: category
+            Layout.row: bar.roomy ? 0 : 1
+            Layout.column: bar.roomy ? 1 : 0
+            Layout.fillWidth: !bar.roomy
             implicitWidth: 190
             visible: backend.exploreCategories.length > 0
             model: ["All categories"].concat(backend.exploreCategories.map(function (c) { return c.name }))
@@ -50,6 +65,9 @@ ColumnLayout {
             }
         }
         Choice {
+            Layout.row: bar.roomy ? 0 : 1
+            Layout.column: bar.roomy ? 2 : 1
+            Layout.fillWidth: !bar.roomy
             implicitWidth: 170
             model: page.sorts.map(function (s) { return page.sortNames[s] })
             currentIndex: Math.max(0, page.sorts.indexOf(backend.exploreSort))
