@@ -1,6 +1,6 @@
 # Maintainer: Tim <tim@ninepointlabs.com>
 pkgname=omaforge
-pkgver=0.2.7
+pkgver=0.2.8
 pkgrel=1
 pkgdesc='World of Warcraft addon manager for Omarchy (CurseForge, WoWInterface, GitHub)'
 arch=('any')
@@ -26,7 +26,7 @@ optdepends=(
   'xdg-desktop-portal: native file and folder pickers'
 )
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('d05c56902b5f6364168409103c81df536393de90573dcf44e5f484784da0088d')
+sha256sums=('SKIP')  # set with updpkgsums after tagging v$pkgver
 
 build() {
   cd "$pkgname-$pkgver"

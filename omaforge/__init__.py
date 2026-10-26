@@ -1,6 +1,6 @@
 """omaforge: a World of Warcraft addon manager for Omarchy."""
 
-__version__ = "0.2.7"
+__version__ = "0.2.8"
 
 # For the About dialog.
 APP_NAME = "omaforge"
