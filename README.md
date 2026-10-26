@@ -227,6 +227,7 @@ systemctl --user enable --now omaforge-update.timer
 | <kbd>Ctrl</kbd>+<kbd>K</kbd> | search |
 | <kbd>Ctrl</kbd>+<kbd>F</kbd> | filter installed addons |
 | <kbd>Ctrl</kbd>+<kbd>,</kbd> | settings |
+| <kbd>Alt</kbd>+<kbd>↑</kbd> <kbd>Alt</kbd>+<kbd>↓</kbd> | previous or next game version in the sidebar |
 | <kbd>Ctrl</kbd>+<kbd>Q</kbd> | quit |
 | <kbd>F1</kbd> | about omaforge |
 | <kbd>Esc</kbd> | close an addon's details or screenshot |
@@ -238,6 +239,10 @@ closes either view.
 
 Hover over an addon's folder count to see its folders, and over a client in
 the sidebar to see where it lives.
+
+The window works down to 640 pixels wide, so it can be tiled beside another
+one. In a narrow window each addon's channel, Pin, Ignore and Remove move into
+its <kbd>⋯</kbd> menu, and Import and Export into the toolbar's.
 
 **About** (at the bottom of the sidebar, in Settings, or <kbd>F1</kbd>) shows
 the version, license, Nine Point Labs and the support address,
@@ -275,7 +280,7 @@ omaforge setup omarchy [--keybind KEYS] [--remove]
 | CurseForge | API key (included in release builds) | Search, top lists, install, update, fingerprint matching. See below for addons whose authors disable downloads in other apps. |
 | WoWInterface | nothing | Public MMOUI API. One release per addon. |
 | GitHub | nothing (token optional) | Releases built with the BigWigs packager; `release.json` picks the right zip for each game. A token raises the rate limit from 60 to 5,000 requests an hour. |
-| Wago Addons | API key | Stubbed until access is granted. |
+| Wago Addons | - | Not supported yet; support is coming. No key is needed until then. |
 
 About half of the most popular CurseForge addons have downloads in other apps
 turned off by their authors. For those, omaforge looks for the same addon on
@@ -324,6 +329,14 @@ to install. To add a branch without a code change, put rules in
 | `~/.local/share/omaforge/state.json` | what omaforge installed; pins, ignores, channels |
 | `~/.local/share/omaforge/backups/` | WTF snapshots per client |
 | `~/.cache/omaforge/` | cached API responses |
+
+If `config.toml` or `flavors.toml` can't be read, every command stops with the
+file name and what is wrong, and the app shows the same message with Save
+turned off, so the file is never written over. The app can set the file aside
+(it is kept as `config.toml.broken-<time>`) and start from the defaults.
+`state.json` is written by omaforge itself, so a damaged one is moved to
+`state.json.damaged-<time>` and a new one started; omaforge says so, and you
+can restore the old one by hand.
 
 ## Development
 

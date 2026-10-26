@@ -21,9 +21,12 @@ class _KeyedStub(Provider):
 
     @property
     def unavailable_reason(self) -> str:
+        if not self.implemented:
+            # Don't send people off to get a key that does nothing yet.
+            return "not supported yet; support is coming, no key needed until then"
         if not self.config.get(self.key_field):
             return f"no API key (set providers.{self.name}.{self.key_field} in config.toml)"
-        return "API client not implemented yet"
+        return ""
 
     def search(self, query, ctx, limit=50):
         self.require()

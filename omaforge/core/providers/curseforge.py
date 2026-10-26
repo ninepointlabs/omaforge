@@ -27,8 +27,9 @@ RELEASE_TYPES = {1: "stable", 2: "beta", 3: "alpha"}
 
 
 def clean_version(display_name: str) -> str:
-    """'Plater-v656' -> 'v656', 'RareScanner_12.1.0.11' -> '12.1.0.11'; 'v426' is unchanged."""
-    return re.sub(r"^[A-Za-z][\w.']*?[-_ ]+(?=v?\d)", "", display_name.strip()) or display_name
+    """'Plater-v656' -> 'v656', 'RareScanner_12.1.0.11' -> '12.1.0.11', '1.0.1.zip' -> '1.0.1'; 'v426' is unchanged."""
+    name = re.sub(r"\.(zip|rar|7z)$", "", display_name.strip(), flags=re.I) or display_name
+    return re.sub(r"^[A-Za-z][\w.']*?[-_ ]+(?=v?\d)", "", name) or name
 
 
 def _ts(iso: str | None) -> int:
