@@ -4,12 +4,21 @@
 # product id in `.flavor.info`, and `.build.info` in the install root gives
 # that product's version. Rules below are tried in order; the first rule whose
 # `products` and `version` both match wins. `products = ["*"]` matches any.
+# A rule with `folders` also requires the client folder to be one of them.
 #
 # To teach omaforge about a new branch without a code change, copy a rule and
 # a game into ~/.config/omaforge/flavors.toml. User rules are tried first and
 # user games replace built-in games with the same id.
 #
 # `verified = false` marks values that were guessed rather than observed.
+
+# --- Folders ---------------------------------------------------------------
+# The product id to assume for a client folder that has no `.flavor.info`.
+# Other folders guess `wow` + the folder name (`_classic_` -> `wow_classic`).
+
+[folders]
+_retail_ = "wow"
+_forever_ = "wowf"
 
 # --- Games -----------------------------------------------------------------
 # toc_suffixes    TOC file suffixes the client reads, most specific first
@@ -77,9 +86,10 @@ curseforge_version_type = 79434
 verified = true
 
 [[game]]
-# World of Warcraft: Forever. The beta client was observed as product
-# `wow_classic_beta`, folder `_classic_beta_`, version 1.60.1.70009
-# (interface 16001). The BigWigs packager (release.sh) names the TOC suffix
+# World of Warcraft: Forever. The release client was observed as product
+# `wowf`, folder `_forever_`, version 1.60.1.70532 (pre-installed before the
+# November 2026 launch). The beta client was product `wow_classic_beta`,
+# folder `_classic_beta_`, version 1.60.1.70009 (interface 16001). The BigWigs packager (release.sh) names the TOC suffix
 # `_Camelot` (Forever's codename), the release.json flavor `forever` (alias
 # `camelot`) and the CurseForge game version type 88568. Whether the client
 # also reads `_Classic` TOCs is a guess.
@@ -106,7 +116,15 @@ verified = false
 # channel: live, ptr, xptr, beta. `version` is a list of comparisons that
 # must all hold against the client's version from .build.info.
 
-# Forever first: its beta shares the generic classic beta product id.
+[[rule]]
+# The Forever release client.
+products = ["wowf"]
+game = "forever"
+channel = "live"
+verified = true
+
+# Forever beta: it shares the generic classic beta product id, so it goes
+# before the Progression Classic rules.
 [[rule]]
 products = ["wow_classic_beta", "wow_classic_ptr", "wow_classic_era_beta", "wow_classic_era_ptr"]
 version = [">=1.60", "<2"]
@@ -115,12 +133,11 @@ channel = "beta"
 verified = true
 
 [[rule]]
-# Guess: the live Forever client's product id is not known yet. Any live
-# client in the 1.60+ range is treated as Forever.
+# Guess: Forever products not seen yet (a PTR, say). Any other client in the
+# 1.60+ range is treated as Forever; the channel follows the product id.
 products = ["*"]
 version = [">=1.60", "<2"]
 game = "forever"
-channel = "live"
 verified = false
 
 [[rule]]
@@ -216,4 +233,15 @@ verified = false
 products = ["*"]
 version = ["<2"]
 game = "classic_era"
+verified = false
+
+# A Forever beta install whose version is gone: Battle.net dropped the
+# `wow_classic_beta` row from .build.info and the folder has no .flavor.info,
+# so every versioned rule above misses. Nothing else has used `_classic_beta_`
+# for this long, so it is taken to be the Forever beta.
+[[rule]]
+products = ["wow_classic_beta"]
+folders = ["_classic_beta_"]
+game = "forever"
+channel = "beta"
 verified = false

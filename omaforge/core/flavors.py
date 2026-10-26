@@ -58,9 +58,12 @@ class Rule:
     version: tuple[str, ...] = ()
     channel: str | None = None
     verified: bool = True
+    folders: tuple[str, ...] = ()
 
-    def matches(self, product: str, version: Version) -> bool:
+    def matches(self, product: str, version: Version, folder: str = "") -> bool:
         if "*" not in self.products and product not in self.products:
+            return False
+        if self.folders and folder not in self.folders:
             return False
         if self.version and not version:
             return False
@@ -89,10 +92,15 @@ def channel_from_product(product: str) -> str:
 class FlavorTable:
     games: dict[str, Game] = field(default_factory=dict)
     rules: list[Rule] = field(default_factory=list)
+    folders: dict[str, str] = field(default_factory=dict)
 
-    def resolve(self, product: str, version: Version) -> Resolution | None:
+    def folder_product(self, folder: str) -> str:
+        """The product id to assume for a client folder without `.flavor.info`."""
+        return self.folders.get(folder) or "wow" + folder.rstrip("_")
+
+    def resolve(self, product: str, version: Version, folder: str = "") -> Resolution | None:
         for rule in self.rules:
-            if rule.matches(product, version):
+            if rule.matches(product, version, folder):
                 game = self.games[rule.game]
                 notes = []
                 if not rule.verified:
@@ -108,7 +116,7 @@ class FlavorTable:
         return None
 
 
-def _parse(data: dict) -> tuple[dict[str, Game], list[Rule]]:
+def _parse(data: dict) -> tuple[dict[str, Game], list[Rule], dict[str, str]]:
     games = {}
     for g in data.get("game", []):
         games[g["id"]] = Game(
@@ -128,22 +136,24 @@ def _parse(data: dict) -> tuple[dict[str, Game], list[Rule]]:
             version=tuple(r.get("version", [])),
             channel=r.get("channel"),
             verified=r.get("verified", True),
+            folders=tuple(r.get("folders", [])),
         )
         for r in data.get("rule", [])
     ]
-    return games, rules
+    return games, rules, dict(data.get("folders", {}))
 
 
 def load(user_path: Path | None = None) -> FlavorTable:
     builtin = tomllib.loads(resources.files("omaforge.core").joinpath("flavors.toml").read_text("utf-8"))
-    games, rules = _parse(builtin)
+    games, rules, folders = _parse(builtin)
     user_path = user_path if user_path is not None else paths.config_dir() / "flavors.toml"
     if user_path.is_file():
         with open(user_path, "rb") as fh:
-            ugames, urules = _parse(tomllib.load(fh))
+            ugames, urules, ufolders = _parse(tomllib.load(fh))
         games.update(ugames)
         rules = urules + rules
+        folders.update(ufolders)
     for rule in rules:
         if rule.game not in games:
             raise ValueError(f"flavor rule refers to unknown game {rule.game!r}")
-    return FlavorTable(games, rules)
+    return FlavorTable(games, rules, folders)

@@ -24,6 +24,8 @@ def test_flavor_info_reads_product(wow_root):
         ("wow", "12.1.0.69933", "retail", "live", True),
         ("wowt", "12.1.5.70000", "retail", "ptr", True),
         ("wow_beta", "13.0.0.1", "retail", "beta", True),
+        ("wowf", "1.60.1.70532", "forever", "live", True),
+        ("wowf", "", "forever", "live", True),
         ("wow_classic_beta", "1.60.1.70009", "forever", "beta", True),
         ("wow_classic_era", "1.15.8.1", "classic_era", "live", True),
         ("wow_classic", "5.5.3.1", "mists", "live", True),
@@ -31,6 +33,7 @@ def test_flavor_info_reads_product(wow_root):
         ("wow_classic_beta", "5.5.4.1", "mists", "beta", True),
         ("wow_anniversary", "2.5.5.1", "tbc", "live", False),
         ("wow_forever", "1.61.0.1", "forever", "live", False),
+        ("wow_forever_ptr", "1.61.0.1", "forever", "ptr", False),
         ("wow_something_new", "14.0.0.1", "retail", "live", False),
     ],
 )
@@ -71,10 +74,56 @@ def test_discover_clients_in_root(wow_root):
     assert clients["_classic_beta_"].key.startswith("classic_beta@")
 
 
-def test_client_without_addons_dir_is_skipped(wow_root):
+def test_empty_client_folder_is_skipped(wow_root):
     (wow_root / "_ptr_").mkdir()
     table = flavors.load(Path("/nonexistent"))
     assert "_ptr_" not in {c.folder for c in discovery.clients_in_root(wow_root, table)}
+
+
+def test_forever_release_client_before_first_run(forever_root):
+    assert buildinfo.read_flavor(forever_root / "_forever_") == "wowf"
+    assert buildinfo.read_builds(forever_root)["wowf"]["version"] == ""
+    table = flavors.load(Path("/nonexistent"))
+    clients = {c.folder: c for c in discovery.clients_in_root(forever_root, table)}
+    forever = clients["_forever_"]
+    assert (forever.game.id, forever.channel, forever.verified) == ("forever", "live", True)
+    assert forever.label == "Forever"
+    assert forever.key.startswith("forever@")
+    assert forever.preinstalled and forever.version_text == "not installed yet"
+    assert forever.interface is None
+    assert any("not installed yet" in n for n in forever.notes)
+    assert any("no Interface/AddOns" in n for n in forever.notes)
+    # Listing must not create anything in the client folder.
+    assert not (forever_root / "_forever_/Interface").exists()
+    assert clients["_classic_beta_"].label == "Forever Beta"
+    assert not clients["_retail_"].preinstalled
+
+
+def test_leftover_classic_beta_folder_is_forever_beta(forever_root):
+    # As on Tim's machine after the launch pre-install: no .flavor.info, no build row.
+    (forever_root / "_classic_beta_/.flavor.info").unlink()
+    info = forever_root / ".build.info"
+    info.write_text("".join(ln for ln in info.read_text().splitlines(True) if not ln.rstrip().endswith("|wow_classic_beta")))
+    table = flavors.load(Path("/nonexistent"))
+    beta = {c.folder: c for c in discovery.clients_in_root(forever_root, table)}["_classic_beta_"]
+    assert (beta.product, beta.version) == ("wow_classic_beta", "")
+    assert (beta.game.id, beta.channel, beta.verified, beta.label) == ("forever", "beta", False, "Forever Beta")
+    assert any("unverified rule" in n for n in beta.notes)
+
+
+def test_beta_fallback_needs_the_folder_and_no_version():
+    table = flavors.load(Path("/nonexistent"))
+    assert table.resolve("wow_classic_beta", (), "_classic_ptr_") is None
+    assert table.resolve("wow_classic_beta", (), "_classic_beta_").game.id == "forever"
+    assert table.resolve("wow_classic_beta", (5, 5, 4), "_classic_beta_").game.id == "mists"
+
+
+def test_client_found_by_game_exe_alone(forever_root):
+    (forever_root / "_forever_/.flavor.info").unlink()
+    table = flavors.load(Path("/nonexistent"))
+    forever = {c.folder: c for c in discovery.clients_in_root(forever_root, table)}["_forever_"]
+    assert forever.product == "wowf" and forever.game.id == "forever"
+    assert any("guessed from folder name" in n for n in forever.notes)
 
 
 @pytest.mark.parametrize("games_dir", [".local/share/lutris/games", ".var/app/net.lutris.Lutris/data/lutris/games"])
