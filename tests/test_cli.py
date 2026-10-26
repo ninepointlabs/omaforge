@@ -48,7 +48,10 @@ def test_pin_uninstall_and_update_all(wow_root, capsys):
     assert cli.main(["update", "--all"]) == 0
     out = capsys.readouterr().out
     assert "Retail:" in out and "Forever Beta:" in out
-    assert cli.main(["uninstall", "Local", "-c", "retail"]) == 0
+    # Local is unknown (no provider), so it needs confirming; without a TTY that means --yes.
+    assert cli.main(["uninstall", "Local", "-c", "retail"]) == 1
+    assert "--yes" in capsys.readouterr().err and (addons / "Local").exists()
+    assert cli.main(["uninstall", "Local", "-c", "retail", "--yes"]) == 0
     assert not (addons / "Local").exists() and not (addons / "Local_Options").exists()
 
 
@@ -65,3 +68,25 @@ def test_export_import_files(wow_root, tmp_path, capsys):
     assert cli.main(["export", str(out), "-c", "retail"]) == 0
     assert json.loads(out.read_text())["format"] == "omaforge.addons"
     assert cli.main(["import", str(out), "-c", "forever"]) == 0
+
+
+def test_import_bad_file_is_a_clean_error(wow_root, tmp_path, capsys):
+    setup(wow_root)
+    assert cli.main(["import", str(tmp_path / "missing.json"), "-c", "retail"]) == 1
+    assert "cannot read" in capsys.readouterr().err
+    bad = tmp_path / "bad.json"
+    bad.write_text("{not json")
+    assert cli.main(["import", str(bad), "-c", "retail"]) == 1
+    err = capsys.readouterr().err
+    assert "bad.json is not valid JSON" in err and "line 1" in err
+    bad.write_text("[]")
+    assert cli.main(["import", str(bad), "-c", "retail"]) == 1
+    assert "not an omaforge addon list" in capsys.readouterr().err
+
+
+def test_broken_config_is_a_clean_error(wow_root, capsys):
+    config.config_path().parent.mkdir(parents=True, exist_ok=True)
+    config.config_path().write_text("roots = nope\n")
+    assert cli.main(["clients"]) == 1
+    err = capsys.readouterr().err
+    assert str(config.config_path()) in err and "line 1" in err
