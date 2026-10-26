@@ -27,7 +27,7 @@ class ManagerError(Exception):
 
 def same_version(a: str, b: str) -> bool:
     def norm(v: str) -> str:
-        v = (v or "").strip().lower()
+        v = re.sub(r"\.(zip|rar|7z)$", "", (v or "").strip().lower())
         return v[1:] if v.startswith("v") and v[1:2].isdigit() else v
 
     return norm(a) == norm(b)
@@ -123,7 +123,10 @@ class Manager:
     def roots_remove(self, path: str) -> None:
         cfg = configmod.load()
         root = discovery.normalize_root(Path(path))
-        cfg["roots"]["paths"] = [p for p in cfg["roots"]["paths"] if p not in (path, str(root) if root else None)]
+        kept = [p for p in cfg["roots"]["paths"] if p not in (path, str(root) if root else None)]
+        if kept == cfg["roots"]["paths"]:
+            raise ManagerError(f"{path} isn't in your roots (see `omaforge roots`)")
+        cfg["roots"]["paths"] = kept
         configmod.save(cfg)
         self.cfg["roots"]["paths"] = cfg["roots"]["paths"]
         self._clients = None
@@ -326,14 +329,18 @@ class Manager:
     def explore(self, client: Client, provider: str, sort: str = "popular", category: str | None = None,
                 offset: int = 0, limit: int = 50) -> list[RemoteAddon]:
         p = self.providers.get(provider)
-        if p is None or not p.explore_sorts:
-            raise ManagerError(f"{provider} has no ranked addon lists")
+        if p is None:
+            raise ManagerError(f"unknown or disabled provider {provider!r}")
+        if not p.explore_sorts:
+            raise ManagerError(f"{p.label} has no ranked addon lists")
         p.require()
         return p.top(self.ctx(client), sort, category or None, offset, limit)
 
     def categories(self, client: Client, provider: str) -> list[dict]:
         p = self.providers.get(provider)
-        if p is None or not p.available:
+        if p is None:
+            raise ManagerError(f"unknown or disabled provider {provider!r}")
+        if not p.available:
             return []
         return p.categories(self.ctx(client))
 
@@ -356,6 +363,10 @@ class Manager:
             raise ManagerError(f"channel must be one of {', '.join(CHANNELS)}")
         try:
             release = p.resolve(addon_id, self.ctx(client), channel)
+        except HttpError as e:
+            if e.status == 404:
+                raise ManagerError(f"no {p.label} addon {addon_id!r}") from e
+            raise
         except DistributionDisabled as e:
             alt = self._alternate_source(client, provider, addon_id, channel)
             if alt is None:

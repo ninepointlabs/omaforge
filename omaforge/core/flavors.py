@@ -12,10 +12,12 @@ from importlib import resources
 from pathlib import Path
 
 from omaforge import paths
+from omaforge.config import ConfigError
 
 Version = tuple[int, ...]
 
 _OPS = {">=": operator.ge, "<=": operator.le, ">": operator.gt, "<": operator.lt, "==": operator.eq}
+_SPEC = re.compile(r"\s*(>=|<=|==|>|<)\s*([\d.]+)\s*")
 
 
 def parse_version(text: str) -> Version:
@@ -24,7 +26,7 @@ def parse_version(text: str) -> Version:
 
 
 def _cmp(version: Version, spec: str) -> bool:
-    m = re.fullmatch(r"\s*(>=|<=|==|>|<)\s*([\d.]+)\s*", spec)
+    m = _SPEC.fullmatch(spec)
     if not m:
         raise ValueError(f"bad version comparison {spec!r}")
     op, target = _OPS[m.group(1)], parse_version(m.group(2))
@@ -143,14 +145,51 @@ def _parse(data: dict) -> tuple[dict[str, Game], list[Rule], dict[str, str]]:
     return games, rules, dict(data.get("folders", {}))
 
 
+def _read_user(path: Path) -> tuple[dict[str, Game], list[Rule], dict[str, str]]:
+    """The user's flavors.toml, or ConfigError naming the file and the problem."""
+    try:
+        with open(path, "rb") as fh:
+            data = tomllib.load(fh)
+    except OSError as e:
+        raise ConfigError(f"{path}: cannot read it ({e.strerror})", path) from None
+    except UnicodeDecodeError:
+        raise ConfigError(f"{path}: not UTF-8 text", path) from None
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigError(f"{path}: {e}", path) from None
+    for table in ("game", "rule"):
+        entries = data.get(table, [])
+        if not isinstance(entries, list) or not all(isinstance(e, dict) for e in entries):
+            raise ConfigError(f"{path}: {table} must be written as [[{table}]] tables", path)
+    if not isinstance(data.get("folders", {}), dict):
+        raise ConfigError(f"{path}: folders must be a table", path)
+    for i, g in enumerate(data.get("game", []), 1):
+        if not isinstance(g.get("id"), str):
+            raise ConfigError(f"{path}: [[game]] #{i} needs an id", path)
+    for i, r in enumerate(data.get("rule", []), 1):
+        if not isinstance(r.get("game"), str):
+            raise ConfigError(f"{path}: [[rule]] #{i} needs a game", path)
+        if not isinstance(r.get("products"), list) or not all(isinstance(p, str) for p in r["products"]):
+            raise ConfigError(f"{path}: [[rule]] #{i} needs products, a list of product ids", path)
+        specs = r.get("version", [])
+        bad = [s for s in specs if not isinstance(s, str) or not _SPEC.fullmatch(s)] if isinstance(specs, list) else [specs]
+        if bad:
+            raise ConfigError(f"{path}: [[rule]] #{i} has a bad version comparison {bad[0]!r}", path)
+    try:
+        return _parse(data)
+    except (TypeError, ValueError) as e:
+        raise ConfigError(f"{path}: {e}", path) from None
+
+
 def load(user_path: Path | None = None) -> FlavorTable:
     builtin = tomllib.loads(resources.files("omaforge.core").joinpath("flavors.toml").read_text("utf-8"))
     games, rules, folders = _parse(builtin)
     user_path = user_path if user_path is not None else paths.config_dir() / "flavors.toml"
     if user_path.is_file():
-        with open(user_path, "rb") as fh:
-            ugames, urules, ufolders = _parse(tomllib.load(fh))
+        ugames, urules, ufolders = _read_user(user_path)
         games.update(ugames)
+        for i, rule in enumerate(urules, 1):
+            if rule.game not in games:
+                raise ConfigError(f"{user_path}: [[rule]] #{i} refers to unknown game {rule.game!r}", user_path)
         rules = urules + rules
         folders.update(ufolders)
     for rule in rules:

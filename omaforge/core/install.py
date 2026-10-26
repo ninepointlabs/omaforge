@@ -127,7 +127,8 @@ def install_zip(
                 os.rename(addons_dir / name, stage / name)
             for name in reversed(moved_out):
                 os.rename(trash / name, addons_dir / name)
-            raise InstallError(f"install failed and was rolled back: {e}") from e
+            raise InstallError(f"can't write to {addons_dir} ({e.strerror or e}); nothing was changed "
+                               "(install rolled back)") from e
         return new
     finally:
         shutil.rmtree(stage, ignore_errors=True)
@@ -151,7 +152,8 @@ def remove_folders(addons_dir: Path, folders: list[str]) -> list[str]:
         for name in reversed(moved):
             os.rename(trash / name, addons_dir / name)
         shutil.rmtree(trash, ignore_errors=True)
-        raise InstallError(f"uninstall failed and was rolled back: {e}") from e
+        raise InstallError(f"can't remove from {addons_dir} ({e.strerror or e}); nothing was changed "
+                           "(uninstall rolled back)") from e
     shutil.rmtree(trash, ignore_errors=True)
     return moved
 

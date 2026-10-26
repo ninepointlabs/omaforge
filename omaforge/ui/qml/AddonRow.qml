@@ -10,6 +10,10 @@ Rectangle {
     required property var modelData
     property int number: 0  // rank shown on the left in Explore; 0 hides it
     readonly property var r: modelData
+    // Narrow rows show just Install; the details view has the page link and the channel.
+    property real room: width  // the list's share of the window, see InstalledPage.room
+    readonly property bool roomy: room >= 32 + (number > 0 ? 42 : 0) + 56 + 160 + providerLabel.implicitWidth
+                                           + pageBtn.implicitWidth + 92 + 100 + 4 * 12
     signal detailsRequested()
 
     height: 74
@@ -85,11 +89,11 @@ Rectangle {
                 ToolTip.text: "The author has turned off downloads in third-party apps on CurseForge.\nomaforge looks for the same addon on GitHub or WoWInterface;\nif there is none, use Page to get it from curseforge.com."
             }
         }
-        Label2 { text: row.r.provider; dim: true; font.pixelSize: 11 }
-        Btn { text: "Page"; subtle: true; visible: !!row.r.url; onClicked: backend.openUrl(row.r.url) }
-        Choice { id: channel; model: ["stable", "beta", "alpha"]; visible: !row.r.installed }
+        Label2 { id: providerLabel; text: row.r.provider; dim: true; font.pixelSize: 11; visible: row.roomy }
+        Btn { id: pageBtn; text: "Page"; subtle: true; visible: row.roomy && !!row.r.url; onClicked: backend.openUrl(row.r.url) }
+        Choice { id: channel; model: ["stable", "beta", "alpha"]; visible: row.roomy && !row.r.installed }
         Btn {
-            Layout.preferredWidth: 100
+            Layout.preferredWidth: row.roomy ? 100 : 84
             text: row.r.installed ? "Installed" : "Install"
             primary: !row.r.installed
             enabled: !row.r.installed && !backend.busy

@@ -2,27 +2,88 @@
 
 Stored in ~/.local/share/omaforge/state.json. Writes go through a lock file
 so the GUI and a timer-driven `omaforge update --all` cannot interleave.
+
+omaforge writes this file itself, so a damaged one is not fatal: it is moved
+aside to state.json.damaged-<time> (never deleted) and a new one is started.
+`recovered` says so, and the CLI and the UI tell the user.
 """
 
 import contextlib
 import fcntl
+import json
+import os
+import time
 from pathlib import Path
 
 from omaforge import paths
-from omaforge.core.fsutil import atomic_write_json, read_json
+from omaforge.core.fsutil import atomic_write_json
 
 SCHEMA = 1
+
+
+def _problem(data) -> str | None:
+    """Why a decoded state.json can't be used, or None when it can."""
+    if not isinstance(data, dict):
+        return "it is not a JSON object"
+    clients = data.get("clients", {})
+    if not isinstance(clients, dict):
+        return "clients is not an object"
+    for key, client in clients.items():
+        if not isinstance(client, dict):
+            return f"client {key!r} is not an object"
+        for part in ("addons", "prefs"):
+            entries = client.get(part, {})
+            if not isinstance(entries, dict) or not all(isinstance(v, dict) for v in entries.values()):
+                return f"{part} of client {key!r} is not an object of objects"
+    return None
 
 
 class State:
     def __init__(self, path: Path | None = None):
         self.path = path or paths.data_dir() / "state.json"
+        # (where the damaged file went, what was wrong) once one has been set aside.
+        self.recovered: tuple[Path, str] | None = None
         self.data = self._load()
 
     def _load(self) -> dict:
-        data = read_json(self.path, None) or {"schema": SCHEMA, "clients": {}}
+        try:
+            data = json.loads(self.path.read_text("utf-8"))
+            problem = _problem(data)
+        except FileNotFoundError:
+            data, problem = None, None
+        except UnicodeDecodeError:
+            problem = "it is not UTF-8 text"
+        except json.JSONDecodeError as e:
+            problem = f"it is not valid JSON ({e})"
+        if problem:
+            moved = self._set_aside()
+            if moved is None:  # another omaforge process moved it first
+                return self._load()
+            self.recovered = (moved, problem)
+            data = None
+        data = data or {"schema": SCHEMA, "clients": {}}
         data.setdefault("clients", {})
         return data
+
+    def _set_aside(self) -> Path | None:
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        dest = self.path.with_name(f"{self.path.name}.damaged-{stamp}")
+        n = 1
+        while dest.exists():
+            n += 1
+            dest = self.path.with_name(f"{self.path.name}.damaged-{stamp}-{n}")
+        try:
+            os.rename(self.path, dest)
+        except FileNotFoundError:
+            return None
+        return dest
+
+    def recovery_message(self) -> str:
+        if not self.recovered:
+            return ""
+        moved, problem = self.recovered
+        return (f"{self.path} could not be read: {problem}. It was moved to {moved} and a new one started; "
+                "pins, ignores, channels and install sources recorded there are reset until you restore it.")
 
     def reload(self) -> None:
         self.data = self._load()

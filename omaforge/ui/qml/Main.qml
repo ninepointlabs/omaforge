@@ -8,7 +8,7 @@ ApplicationWindow {
     id: win
     width: 1180
     height: 760
-    minimumWidth: 860
+    minimumWidth: 640  // half of a 1280 px screen, so it can be tiled beside another window
     minimumHeight: 520
     visible: true
     title: backend.client.label ? "omaforge · " + backend.client.label : "omaforge"
@@ -35,7 +35,15 @@ ApplicationWindow {
     property int pageIndex: 0
     readonly property var tabs: ["Installed", "Explore", "Search", "Backups", "Settings"]
     readonly property int settingsPage: 4
+    // Below this the sidebar narrows and rows and toolbars fold their extra actions into menus.
+    readonly property bool narrow: width < 1000
+    readonly property real pageWidth: width - (narrow ? 190 : 240) - 1
 
+    function stepClient(step) {
+        var keys = backend.clients.map(function (c) { return c.key })
+        if (keys.length > 1)
+            backend.selectClient(keys[(keys.indexOf(backend.currentClient) + step + keys.length) % keys.length])
+    }
     function go(i) {
         pageIndex = i
         if (i === 1) backend.ensureExplore()
@@ -53,6 +61,8 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+4"; onActivated: win.go(3) }
     Shortcut { sequence: "Ctrl+,"; onActivated: win.go(win.settingsPage) }
     Shortcut { sequence: "F1"; onActivated: about.open() }
+    Shortcut { sequence: "Alt+Down"; onActivated: win.stepClient(1) }
+    Shortcut { sequence: "Alt+Up"; onActivated: win.stepClient(-1) }
 
     Connections {
         target: backend
@@ -71,7 +81,7 @@ ApplicationWindow {
         // Sidebar: one entry per detected client.
         Rectangle {
             Layout.fillHeight: true
-            Layout.preferredWidth: 240
+            Layout.preferredWidth: win.narrow ? 190 : 240
             color: theme.surface
 
             ColumnLayout {
@@ -117,12 +127,21 @@ ApplicationWindow {
                                 color: item.current ? theme.foreground : theme.dim
                                 font.pixelSize: 14
                             }
-                            Label2 {
+                            RowLayout {
                                 Layout.fillWidth: true
-                                dim: true
-                                font.pixelSize: 11
-                                text: item.modelData.version + "  ·  " + item.modelData.folder
-                                      + (item.modelData.verified ? "" : "  ·  unverified")
+                                spacing: 6
+                                Label2 {
+                                    Layout.fillWidth: true
+                                    dim: true
+                                    font.pixelSize: 11
+                                    text: [item.modelData.version, item.modelData.folder].filter(function (s) { return !!s }).join("  ·  ")
+                                }
+                                Label2 {
+                                    visible: !item.modelData.verified
+                                    font.pixelSize: 11
+                                    color: theme.yellow
+                                    text: "unverified"
+                                }
                             }
                             Item { Layout.fillHeight: true }
                         }
@@ -138,7 +157,8 @@ ApplicationWindow {
                     dim: true
                     wrapMode: Text.WordWrap
                     elide: Text.ElideNone
-                    text: "No World of Warcraft install found.\nAdd its folder under Settings."
+                    text: backend.configError ? "Installs can't be listed until the settings file is fixed."
+                                              : "No World of Warcraft install found.\nAdd its folder under Settings."
                 }
                 Item { Layout.fillHeight: true }
 
@@ -149,7 +169,8 @@ ApplicationWindow {
                     spacing: 0
                     Btn { text: "Rescan"; subtle: true; onClicked: backend.rescan() }
                     Item { Layout.fillWidth: true }
-                    Btn { objectName: "sidebarAbout"; text: "About"; subtle: true; leftPadding: 8; rightPadding: 8; onClicked: about.open() }
+                    // Narrow: About stays on F1 and in Settings.
+                    Btn { objectName: "sidebarAbout"; text: "About"; subtle: true; visible: !win.narrow; leftPadding: 8; rightPadding: 8; onClicked: about.open() }
                     Btn { text: "Settings"; subtle: true; active: win.pageIndex === win.settingsPage; onClicked: win.go(win.settingsPage) }
                 }
             }
@@ -161,17 +182,25 @@ ApplicationWindow {
             Layout.fillHeight: true
             spacing: 0
 
-            // Header: client name and tabs.
-            RowLayout {
+            // Header: client name and tabs; the tabs go on a line of their own when narrow.
+            GridLayout {
+                id: header
+                readonly property bool stacked: win.pageWidth - 32 < tabRow.implicitWidth + columnSpacing + 220
                 Layout.fillWidth: true
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
                 Layout.topMargin: 14
-                spacing: 18
+                columns: stacked ? 1 : 2
+                columnSpacing: 18
+                rowSpacing: 6
                 ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 0  // the tabs get their full width first; the title takes what's left
                     spacing: 2
-                    Label2 { text: win.pageIndex === win.settingsPage ? "Settings" : (backend.client.label || "omaforge"); font.pixelSize: 20 }
+                    Label2 { Layout.fillWidth: true; text: win.pageIndex === win.settingsPage ? "Settings" : (backend.client.label || "omaforge"); font.pixelSize: 20 }
                     Label2 {
+                        Layout.fillWidth: true
                         dim: true
                         font.pixelSize: 11
                         visible: win.pageIndex !== win.settingsPage && !!backend.client.path
@@ -179,42 +208,98 @@ ApplicationWindow {
                               + (win.pageIndex === 0 ? " · " + installed.summary : "")
                     }
                 }
-                Item { Layout.fillWidth: true }
-                Repeater {
-                    model: 4
-                    delegate: Item {
-                        id: tab
-                        required property int index
-                        implicitWidth: tabText.implicitWidth + 8
-                        implicitHeight: 34
-                        Label2 {
-                            id: tabText
-                            anchors.centerIn: parent
-                            text: win.tabs[tab.index] + (tab.index === 0 && backend.updateCount ? "  " + backend.updateCount : "")
-                            color: win.pageIndex === tab.index ? theme.foreground : theme.dim
+                RowLayout {
+                    id: tabRow
+                    spacing: 18
+                    Repeater {
+                        model: 4
+                        delegate: Item {
+                            id: tab
+                            required property int index
+                            implicitWidth: tabText.implicitWidth + 8
+                            implicitHeight: 34
+                            // Natural width, but able to shrink (eliding) rather than push past the window.
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: implicitWidth
+                            Layout.minimumWidth: 36
+                            Label2 {
+                                id: tabText
+                                anchors.centerIn: parent
+                                // Only when really squeezed: a rounding error must not elide the label.
+                                width: tab.width - 8 < implicitWidth - 1 ? tab.width - 8 : implicitWidth
+                                text: win.tabs[tab.index] + (tab.index === 0 && backend.updateCount ? "  " + backend.updateCount : "")
+                                color: win.pageIndex === tab.index ? theme.foreground : theme.dim
+                            }
+                            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 2; color: theme.accent; visible: win.pageIndex === tab.index }
+                            HoverHandler { cursorShape: Qt.PointingHandCursor }
+                            TapHandler { onTapped: win.go(tab.index) }
                         }
-                        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 2; color: theme.accent; visible: win.pageIndex === tab.index }
-                        HoverHandler { cursorShape: Qt.PointingHandCursor }
-                        TapHandler { onTapped: win.go(tab.index) }
                     }
                 }
             }
             Rectangle { Layout.fillWidth: true; height: 1; color: theme.border; Layout.topMargin: 8 }
 
+            // A settings file that can't be read: say which and what's wrong, instead of
+            // "no install found", and offer only actions that keep the file.
+            Rectangle {
+                objectName: "configErrorBanner"
+                Layout.fillWidth: true
+                Layout.preferredHeight: bannerColumn.implicitHeight + 24
+                visible: backend.configError !== ""
+                color: theme.surface
+                Rectangle { width: 3; height: parent.height; color: theme.red }
+                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
+                ColumnLayout {
+                    id: bannerColumn
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: 16
+                    anchors.rightMargin: 16
+                    spacing: 8
+                    Label2 { text: "omaforge can't read a settings file"; color: theme.red; font.bold: true }
+                    Label2 {
+                        objectName: "configErrorText"
+                        Layout.fillWidth: true
+                        wrapMode: Text.WrapAnywhere
+                        elide: Text.ElideNone
+                        text: backend.configError
+                    }
+                    Label2 {
+                        Layout.fillWidth: true
+                        dim: true
+                        wrapMode: Text.WordWrap
+                        elide: Text.ElideNone
+                        text: "Fix the file and press Rescan. Or set it aside: it is kept under a new name next to the original, "
+                              + "and omaforge starts again from its defaults. Nothing is saved over it until then."
+                    }
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 8
+                        Btn { text: "Open file"; onClicked: backend.openPath(backend.configErrorPath) }
+                        Btn { text: "Rescan"; enabled: !backend.busy; onClicked: backend.rescan() }
+                        Btn { objectName: "setAsideBroken"; text: "Set it aside and use defaults"; subtle: true; danger: true; enabled: !backend.busy; onClicked: backend.setAsideBrokenFile() }
+                    }
+                }
+            }
+
             StackLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                // The hidden pages' minimum widths would otherwise widen the shown one past the window.
+                Layout.minimumWidth: 0
                 currentIndex: win.pageIndex
                 InstalledPage {
                     id: installed
+                    room: win.pageWidth
                     onExportRequested: exportDialog.open()
                     onImportRequested: importDialog.open()
                     onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) }
                     onShowDetails: function (a) { details.show(a) }
                 }
-                ExplorePage { id: explore; onShowDetails: function (a) { details.show(a) } }
-                SearchPage { id: search; onShowDetails: function (a) { details.show(a) } }
-                BackupsPage { onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) } }
+                ExplorePage { id: explore; room: win.pageWidth; onShowDetails: function (a) { details.show(a) } }
+                SearchPage { id: search; room: win.pageWidth; onShowDetails: function (a) { details.show(a) } }
+                BackupsPage { room: win.pageWidth; onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) } }
                 SettingsPage { onAddFolderRequested: folderDialog.open(); onAboutRequested: about.open() }
             }
 
@@ -239,7 +324,9 @@ ApplicationWindow {
                 Label2 {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
+                    anchors.right: parent.right
                     anchors.leftMargin: 16
+                    anchors.rightMargin: 16
                     dim: true
                     font.pixelSize: 11
                     text: backend.busy ? (backend.status || "Working") + "…" : "Ctrl+R check · Ctrl+U update all · Ctrl+2 explore · Ctrl+K search · Ctrl+F filter · F1 about"

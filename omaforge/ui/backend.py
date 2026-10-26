@@ -18,6 +18,7 @@ from PySide6.QtCore import Property, QObject, QUrl, Signal, Slot
 
 from omaforge import __version__, config as configmod
 from omaforge.buildkey import builtin_curseforge_key
+from omaforge.config import ConfigError
 from omaforge.core.describe import clean_html
 from omaforge.core.manager import Manager
 
@@ -65,6 +66,9 @@ class Backend(QObject):
         self._explore_more = False
         self._details: dict = {}
         self._details_for = ""  # provider:id the details view is waiting for
+        self._config_error = ""  # a settings file omaforge can't read, shown instead of the clients
+        self._config_error_path = ""
+        self._state_reported = False
         self._done.connect(self._finish)
         self._run(self._load_clients, self._clients_loaded, "Looking for World of Warcraft")
 
@@ -187,10 +191,23 @@ class Backend(QObject):
     def detailsLoading(self):
         return bool(self._details_for) and not self._details
 
+    @Property(str, notify=changed)
+    def configError(self):
+        return self._config_error
+
+    @Property(str, notify=changed)
+    def configErrorPath(self):
+        return self._config_error_path
+
     @Property("QVariantMap", notify=changed)
     def settings(self):
-        cfg = configmod.load()
+        try:
+            cfg, error = configmod.load(), ""
+        except ConfigError as e:
+            # Show the defaults, but Save stays off: the file is never rewritten from here.
+            cfg, error = copy.deepcopy(configmod.DEFAULTS), str(e)
         return {
+            "error": error,
             "roots": list(cfg["roots"]["paths"]),
             "autodetect": cfg["roots"]["autodetect"],
             "githubToken": cfg["providers"]["github"]["token"],
@@ -205,14 +222,27 @@ class Backend(QObject):
 
     # Clients --------------------------------------------------------------
     def _load_clients(self):
-        if self.m is None:
-            self.m = Manager()
+        try:
+            if self.m is None:
+                self.m = Manager()
+        except ConfigError as e:
+            return e
         clients = self.m.clients(refresh=True)
         providers = [{"name": p.name, "label": p.label, "available": p.available, "reason": p.unavailable_reason}
                      for p in self.m.providers.values()]
         return [c.to_dict() for c in clients], providers, self.m.explore_sources()
 
     def _clients_loaded(self, result) -> None:
+        if isinstance(result, ConfigError):
+            self._config_error, self._config_error_path = str(result), str(result.path or "")
+            self._clients, self._providers, self._explore_sources = [], [], []
+            self._current, self._addons, self._checked = "", [], False
+            self.changed.emit()
+            return
+        self._config_error = self._config_error_path = ""
+        if self.m.state.recovered and not self._state_reported:
+            self._state_reported = True
+            self.toast.emit("error", self.m.state.recovery_message())
         self._clients, self._providers, self._explore_sources = result
         names = [s["name"] for s in self._explore_sources]
         if self._explore["provider"] not in names:
@@ -226,7 +256,23 @@ class Backend(QObject):
 
     @Slot()
     def rescan(self) -> None:
+        if self._config_error:
+            self.m = None  # read the settings files again
         self._run(self._load_clients, self._clients_loaded, "Looking for World of Warcraft")
+
+    @Slot()
+    def setAsideBrokenFile(self) -> None:
+        """Keep the unreadable settings file under a new name and start from the defaults."""
+        path = Path(self._config_error_path) if self._config_error_path else None
+        if path is None:
+            return
+
+        def then(moved):
+            if moved:
+                self.toast.emit("info", f"Saved the unreadable file as {moved}; using the defaults now")
+            self.rescan()
+
+        self._run(lambda: configmod.set_aside(path), then, "Setting the file aside")
 
     @Slot(str)
     def selectClient(self, key: str) -> None:
@@ -558,6 +604,10 @@ class Backend(QObject):
 
     @Slot("QVariantMap")
     def saveSettings(self, s) -> None:
+        if self._config_error:
+            self.toast.emit("error", f"Not saved: {self._config_error}")
+            return
+
         def work():
             cfg = configmod.load()
             cfg["roots"]["autodetect"] = bool(s["autodetect"])

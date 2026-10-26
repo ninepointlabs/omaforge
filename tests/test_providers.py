@@ -278,7 +278,7 @@ def test_curseforge_fingerprint_matching(tmp_path):
 def test_wago_stub():
     assert not Wago(FakeHttp(), {"api_key": ""}).available
     w = Wago(FakeHttp(), {"api_key": "key"})
-    assert not w.available and "not implemented" in w.unavailable_reason
+    assert not w.available and "not supported yet" in w.unavailable_reason
 
 
 @pytest.mark.parametrize("raw,clean", [
