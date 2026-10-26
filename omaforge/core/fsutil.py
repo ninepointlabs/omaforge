@@ -27,10 +27,3 @@ def atomic_write_text(path: Path, text: str, mode: int = 0o644) -> None:
 
 def atomic_write_json(path: Path, obj, mode: int = 0o644) -> None:
     atomic_write_text(path, json.dumps(obj, indent=2, sort_keys=True) + "\n", mode)
-
-
-def read_json(path: Path, default=None):
-    try:
-        return json.loads(path.read_text("utf-8"))
-    except FileNotFoundError:
-        return default

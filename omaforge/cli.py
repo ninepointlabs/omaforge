@@ -103,6 +103,9 @@ def cmd_list(m: Manager, args) -> int:
     text += _table(rows, ["NAME", "VERSION", "STATUS", "SOURCE", "MATCH", "CHANNEL", "FLAGS", "DIRS"]) if rows else "(none)"
     if rows:
         text += "\n\nFLAGS: P pinned, I ignored, ! may be out of date, x not loadable by this client"
+    errors = [f"  {a.name}: {a.update_error}" for a in addons if _status(a) == "?"]
+    if errors:
+        text += "\n\n? could not be checked:\n" + "\n".join(errors)
     _out(args, {"client": client.to_dict(), "addons": [a.to_dict() for a in addons]}, text)
     return 0
 
@@ -195,11 +198,17 @@ def _addon_rows(results, numbered=False, offset=0):
 def cmd_search(m: Manager, args) -> int:
     client = m.client(args.client)
     providers = [PROVIDER_ALIASES.get(p, p) for p in args.provider] if args.provider else None
+    unknown = [p for p in providers or [] if p not in m.providers]
+    if unknown:
+        raise ManagerError(f"unknown or disabled provider {unknown[0]!r}")
     results, errors = m.search(client, " ".join(args.query), providers)
     if SEARCH_SORTS[args.sort]:
         results.sort(key=SEARCH_SORTS[args.sort])
     rows, header = _addon_rows(results[: args.limit])
     text = _table(rows, header) if rows else "no results"
+    if not rows and "github" in m.providers and "github" in (providers or m.providers):
+        text += ("\nGitHub search only finds repositories tagged wow-addon; "
+                 "for any other, give owner/repo (e.g. omaforge install github:funkydude/BugSack)")
     for p, e in errors.items():
         text += f"\n{p}: {e}"
     _out(args, {"results": [r.to_dict() for r in results], "errors": errors}, text)
@@ -449,6 +458,8 @@ def main(argv: list[str]) -> int:
         return cmd_setup(None, args)
     try:
         m = Manager()
+        if m.state.recovered:
+            print(f"omaforge: warning: {m.state.recovery_message()}", file=sys.stderr)
         if args.offline:
             m.http.offline = True
         return args.fn(m, args)
