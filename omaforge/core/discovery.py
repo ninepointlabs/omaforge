@@ -214,7 +214,7 @@ def clients_in_root(root: Path, table: FlavorTable) -> list[Client]:
             notes.append(f"product {product!r} not listed in .build.info; version unknown")
         if not (child / "Interface" / "AddOns").is_dir():
             notes.append("no Interface/AddOns folder yet; it is created on the first install")
-        res = table.resolve(product, parse_version(version))
+        res = table.resolve(product, parse_version(version), child.name)
         if res is None:
             notes.append(f"no flavor rule matches product {product!r} version {version or '?'}")
             clients.append(Client(root, child.name, product, version, None, "live", False, notes, preinstalled))

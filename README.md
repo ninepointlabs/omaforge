@@ -303,7 +303,9 @@ to install. To add a branch without a code change, put rules in
   addon install.
 - The beta client is `_classic_beta_`, product `wow_classic_beta`, version
   1.60.x (interface 16001). With both installed, `-c forever` picks the
-  release client and `-c classic_beta` the beta.
+  release client and `-c classic_beta` the beta. A leftover `_classic_beta_`
+  whose version Battle.net no longer lists is still shown as Forever Beta,
+  by an unverified rule.
 - The BigWigs packager builds for it as flavor `forever` (alias `camelot`),
   with `_Camelot` TOC files.
 - CurseForge lists it as game version type 88568.

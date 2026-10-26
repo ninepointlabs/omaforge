@@ -99,6 +99,25 @@ def test_forever_release_client_before_first_run(forever_root):
     assert not clients["_retail_"].preinstalled
 
 
+def test_leftover_classic_beta_folder_is_forever_beta(forever_root):
+    # As on Tim's machine after the launch pre-install: no .flavor.info, no build row.
+    (forever_root / "_classic_beta_/.flavor.info").unlink()
+    info = forever_root / ".build.info"
+    info.write_text("".join(ln for ln in info.read_text().splitlines(True) if not ln.rstrip().endswith("|wow_classic_beta")))
+    table = flavors.load(Path("/nonexistent"))
+    beta = {c.folder: c for c in discovery.clients_in_root(forever_root, table)}["_classic_beta_"]
+    assert (beta.product, beta.version) == ("wow_classic_beta", "")
+    assert (beta.game.id, beta.channel, beta.verified, beta.label) == ("forever", "beta", False, "Forever Beta")
+    assert any("unverified rule" in n for n in beta.notes)
+
+
+def test_beta_fallback_needs_the_folder_and_no_version():
+    table = flavors.load(Path("/nonexistent"))
+    assert table.resolve("wow_classic_beta", (), "_classic_ptr_") is None
+    assert table.resolve("wow_classic_beta", (), "_classic_beta_").game.id == "forever"
+    assert table.resolve("wow_classic_beta", (5, 5, 4), "_classic_beta_").game.id == "mists"
+
+
 def test_client_found_by_game_exe_alone(forever_root):
     (forever_root / "_forever_/.flavor.info").unlink()
     table = flavors.load(Path("/nonexistent"))

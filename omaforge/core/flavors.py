@@ -58,9 +58,12 @@ class Rule:
     version: tuple[str, ...] = ()
     channel: str | None = None
     verified: bool = True
+    folders: tuple[str, ...] = ()
 
-    def matches(self, product: str, version: Version) -> bool:
+    def matches(self, product: str, version: Version, folder: str = "") -> bool:
         if "*" not in self.products and product not in self.products:
+            return False
+        if self.folders and folder not in self.folders:
             return False
         if self.version and not version:
             return False
@@ -95,9 +98,9 @@ class FlavorTable:
         """The product id to assume for a client folder without `.flavor.info`."""
         return self.folders.get(folder) or "wow" + folder.rstrip("_")
 
-    def resolve(self, product: str, version: Version) -> Resolution | None:
+    def resolve(self, product: str, version: Version, folder: str = "") -> Resolution | None:
         for rule in self.rules:
-            if rule.matches(product, version):
+            if rule.matches(product, version, folder):
                 game = self.games[rule.game]
                 notes = []
                 if not rule.verified:
@@ -133,6 +136,7 @@ def _parse(data: dict) -> tuple[dict[str, Game], list[Rule], dict[str, str]]:
             version=tuple(r.get("version", [])),
             channel=r.get("channel"),
             verified=r.get("verified", True),
+            folders=tuple(r.get("folders", [])),
         )
         for r in data.get("rule", [])
     ]

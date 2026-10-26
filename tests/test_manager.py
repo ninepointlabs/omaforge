@@ -57,6 +57,15 @@ def test_forever_prefers_release_over_beta(forever_root, tmp_path):
     assert m.client(None).folder == "_retail_"
 
 
+def test_forever_selection_with_leftover_beta(forever_root, tmp_path):
+    (forever_root / "_classic_beta_/.flavor.info").unlink()
+    info = forever_root / ".build.info"
+    info.write_text("".join(ln for ln in info.read_text().splitlines(True) if not ln.rstrip().endswith("|wow_classic_beta")))
+    m = World(forever_root, tmp_path).m
+    assert m.client("forever").folder == "_forever_"
+    assert m.client("classic_beta").label == "Forever Beta"
+
+
 def test_install_into_unrun_client_creates_addons_dir(forever_root, tmp_path):
     w = World(forever_root, tmp_path)
     w.publish("v1", ["Foo"])
