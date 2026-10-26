@@ -208,12 +208,14 @@ def test_details_popup_loads_and_closes_with_escape(app, wow_root, tmp_path):
     assert messages == []
 
 
-def _load(backend):
+def _load(backend, font=None):
     from PySide6.QtQuick import QQuickWindow
     from shiboken6 import Shiboken
 
     engine = QQmlApplicationEngine()
     engine.keep = (Theme(), AppInfo())  # QML holds no reference of its own to context objects
+    if font:
+        engine.keep[0]._font = font
     engine.rootContext().setContextProperty("theme", engine.keep[0])
     engine.rootContext().setContextProperty("backend", backend)
     engine.rootContext().setContextProperty("appInfo", engine.keep[1])
@@ -311,8 +313,9 @@ def test_damaged_state_json_is_reported_in_the_window(app, wow_root, tmp_path):
     backend.shutdown()
 
 
+@pytest.mark.parametrize("font", [None, "DejaVu Sans Mono"])  # the Omarchy font here, a wide one as in CI
 @pytest.mark.parametrize("width", [640, 760, 1000, 1180])
-def test_window_fits_half_a_screen(app, wow_root, tmp_path, width):
+def test_window_fits_half_a_screen(app, wow_root, tmp_path, width, font):
     """Nothing is cut off on the right, down to the minimum width (QA M4)."""
     for name in ("BugSack", "Details", "StoryTracker"):
         make_addon(wow_root / "_retail_/Interface/AddOns", name, f"## Title: {name} with a long title\n## Version: 1\n")
@@ -324,9 +327,12 @@ def test_window_fits_half_a_screen(app, wow_root, tmp_path, width):
     messages, previous = _qml_messages()
     try:
         backend = Backend(Manager(cfg=cfg, http=FakeHttp(), home=tmp_path / "home"))
-        engine, win = _load(backend)
+        engine, win = _load(backend, font)
         wait(app, backend)
         assert win.property("minimumWidth") <= 640
+        win.setProperty("width", 1400)  # start wide, as a window that is then tiled
+        wait(app, backend)
+        win.grabWindow()
         win.setProperty("width", width)
         win.setProperty("height", 700)
         for page in (0, 2, 3, 4):

@@ -6,11 +6,14 @@ ColumnLayout {
     id: page
     spacing: 0
     signal confirm(string title, string message, string confirmText, bool dangerous, var action)
+    // The width the window has for this page. The narrow layouts follow this, not the page's
+    // own width, which can't shrink below what the wide layout needs.
+    property real room: width
 
     // The buttons go under the text when narrow.
     GridLayout {
         id: bar
-        readonly property bool roomy: width >= 640
+        readonly property bool roomy: page.room - 32 >= 240 + openWtf.implicitWidth + backUp.implicitWidth + 2 * columnSpacing
         Layout.fillWidth: true
         Layout.margins: 16
         Layout.bottomMargin: 8
@@ -26,8 +29,8 @@ ColumnLayout {
             text: "Snapshots of the WTF folder: SavedVariables, keybindings and client settings. "
                   + "One is taken automatically before every bulk update."
         }
-        Btn { text: "Open WTF folder"; subtle: true; enabled: !!backend.client.path; onClicked: backend.openPath(backend.client.path + "/WTF") }
-        Btn { text: "Back up now"; primary: true; enabled: !backend.busy; onClicked: backend.createBackup() }
+        Btn { id: openWtf; text: "Open WTF folder"; subtle: true; enabled: !!backend.client.path; onClicked: backend.openPath(backend.client.path + "/WTF") }
+        Btn { id: backUp; text: "Back up now"; primary: true; enabled: !backend.busy; onClicked: backend.createBackup() }
     }
     Rectangle { Layout.fillWidth: true; height: 1; color: theme.border }
 

@@ -7,6 +7,9 @@ ColumnLayout {
     id: page
     spacing: 0
     signal showDetails(var addon)
+    // The width the window has for this page. The narrow layouts follow this, not the page's
+    // own width, which can't shrink below what the wide layout needs.
+    property real room: width
 
     readonly property var sortNames: ({
         "popular": "Most popular", "downloads": "Most downloaded", "updated": "Recently updated",
@@ -22,7 +25,8 @@ ColumnLayout {
     // Sources on the left and the pickers on the right; the pickers get a line of their own when narrow.
     GridLayout {
         id: bar
-        readonly property bool roomy: width >= 640
+        readonly property bool roomy: page.room - 32 >= sources.implicitWidth + (category.visible ? 190 + columnSpacing : 0)
+                                                        + 170 + columnSpacing
         Layout.fillWidth: true
         Layout.margins: 16
         Layout.bottomMargin: 8
@@ -31,6 +35,7 @@ ColumnLayout {
         rowSpacing: 8
 
         RowLayout {
+            id: sources
             Layout.row: 0
             Layout.column: 0
             Layout.columnSpan: bar.roomy ? 1 : 2
@@ -102,6 +107,7 @@ ColumnLayout {
         delegate: AddonRow {
             required property int index
             width: list.width
+            room: page.room
             number: index + 1
             onDetailsRequested: page.showDetails(r)
         }

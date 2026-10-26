@@ -9,6 +9,9 @@ ColumnLayout {
     signal showDetails(var addon)
     property var disabledProviders: ({})
     property string lastQuery: ""
+    // The width the window has for this page. The narrow layouts follow this, not the page's
+    // own width, which can't shrink below what the wide layout needs.
+    property real room: width
 
     readonly property var usable: backend.providers.filter(function (p) { return p.available })
     readonly property var unusable: backend.providers.filter(function (p) { return !p.available })
@@ -25,7 +28,7 @@ ColumnLayout {
     // One line when wide; when narrow the source toggles and the sort go on a second line.
     GridLayout {
         id: bar
-        readonly property bool roomy: width >= 760
+        readonly property bool roomy: page.room - 32 >= 160 + sources.implicitWidth + 170 + searchBtn.implicitWidth + 3 * columnSpacing
         Layout.fillWidth: true
         Layout.margins: 16
         Layout.bottomMargin: 8
@@ -43,6 +46,7 @@ ColumnLayout {
             onAccepted: page.run()
         }
         RowLayout {
+            id: sources
             Layout.row: bar.roomy ? 0 : 1
             Layout.column: bar.roomy ? 1 : 0
             spacing: 8
@@ -77,6 +81,7 @@ ColumnLayout {
             ToolTip.text: "Sort results"
         }
         Btn {
+            id: searchBtn
             Layout.row: 0
             Layout.column: bar.roomy ? 3 : 1
             Layout.fillWidth: !bar.roomy
@@ -126,7 +131,7 @@ ColumnLayout {
         }
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
-        delegate: AddonRow { width: list.width; onDetailsRequested: page.showDetails(r) }
+        delegate: AddonRow { width: list.width; room: page.room; onDetailsRequested: page.showDetails(r) }
 
         Label2 {
             anchors.centerIn: parent

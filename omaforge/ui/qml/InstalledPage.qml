@@ -11,6 +11,9 @@ ColumnLayout {
     signal showDetails(var addon)
 
     property string filter: ""
+    // The width the window has for this page. The narrow layouts follow this, not the page's
+    // own width, which can't shrink below what the wide layout needs.
+    property real room: width
 
     readonly property var shown: {
         var q = filter.toLowerCase()
@@ -40,10 +43,15 @@ ColumnLayout {
             "Remove", true, function () { backend.uninstall(a.key) })
     }
 
+    // Hidden: their widths say whether a row's full set of buttons fits (implicit widths
+    // don't depend on visibility, so this doesn't feed back on itself).
+    Btn { id: removeProbe; visible: false; text: "Remove" }
+
     RowLayout {
         id: toolbar
         // Import and Export go into a menu when the full toolbar doesn't fit.
-        readonly property bool roomy: width >= 640
+        readonly property bool roomy: page.room - 32 >= 120 + importBtn.implicitWidth + exportBtn.implicitWidth
+                                      + checkWide.implicitWidth + updateBtn.implicitWidth + 4 * spacing
         Layout.fillWidth: true
         Layout.margins: 16
         Layout.bottomMargin: 8
@@ -53,23 +61,26 @@ ColumnLayout {
             id: filterField
             Layout.fillWidth: true
             Layout.maximumWidth: 260
-            Layout.minimumWidth: 100
+            Layout.minimumWidth: 60
             placeholderText: "Filter addons  (Ctrl+F)"
             onTextChanged: page.filter = text
             Keys.onEscapePressed: text = ""
         }
         Item { Layout.fillWidth: true }
-        Btn { text: "Import…"; subtle: true; visible: toolbar.roomy; onClicked: page.importRequested() }
-        Btn { text: "Export…"; subtle: true; visible: toolbar.roomy; onClicked: page.exportRequested() }
+        Btn { id: importBtn; text: "Import…"; subtle: true; visible: toolbar.roomy; onClicked: page.importRequested() }
+        Btn { id: exportBtn; text: "Export…"; subtle: true; visible: toolbar.roomy; onClicked: page.exportRequested() }
+        Btn { id: checkWide; text: "Check for updates"; visible: toolbar.roomy; enabled: !backend.busy; onClicked: backend.checkUpdates() }
         Btn {
-            text: toolbar.roomy ? "Check for updates" : "Check"
+            text: "Check"
+            visible: !toolbar.roomy
             enabled: !backend.busy
             onClicked: backend.checkUpdates()
-            ToolTip.visible: hovered && !toolbar.roomy
+            ToolTip.visible: hovered
             ToolTip.delay: 600
             ToolTip.text: "Check for updates (Ctrl+R)"
         }
         Btn {
+            id: updateBtn
             text: backend.updateCount ? "Update all (" + backend.updateCount + ")" : "Update all"
             primary: true
             enabled: backend.updateCount > 0 && !backend.busy
@@ -100,7 +111,7 @@ ColumnLayout {
             readonly property var a: modelData
             readonly property bool canUpdate: a.update_available && !a.pinned && !a.ignored
             // Narrow rows keep Update and put channel, Pin, Ignore and Remove in a menu.
-            readonly property bool roomy: width >= 820
+            readonly property bool roomy: page.room >= 32 + 160 + 130 + 92 + 74 + 78 + 78 + removeProbe.implicitWidth + 6 * 12
             width: list.width
             height: 58
             color: hover.hovered ? theme.surface : "transparent"

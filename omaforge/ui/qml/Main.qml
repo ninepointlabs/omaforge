@@ -37,6 +37,7 @@ ApplicationWindow {
     readonly property int settingsPage: 4
     // Below this the sidebar narrows and rows and toolbars fold their extra actions into menus.
     readonly property bool narrow: width < 1000
+    readonly property real pageWidth: width - (narrow ? 190 : 240) - 1
 
     function stepClient(step) {
         var keys = backend.clients.map(function (c) { return c.key })
@@ -184,7 +185,7 @@ ApplicationWindow {
             // Header: client name and tabs; the tabs go on a line of their own when narrow.
             GridLayout {
                 id: header
-                readonly property bool stacked: width < 640
+                readonly property bool stacked: win.pageWidth - 32 < tabRow.implicitWidth + columnSpacing + 220
                 Layout.fillWidth: true
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
@@ -195,6 +196,7 @@ ApplicationWindow {
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
+                    Layout.preferredWidth: 0  // the tabs get their full width first; the title takes what's left
                     spacing: 2
                     Label2 { Layout.fillWidth: true; text: win.pageIndex === win.settingsPage ? "Settings" : (backend.client.label || "omaforge"); font.pixelSize: 20 }
                     Label2 {
@@ -207,6 +209,7 @@ ApplicationWindow {
                     }
                 }
                 RowLayout {
+                    id: tabRow
                     spacing: 18
                     Repeater {
                         model: 4
@@ -215,9 +218,15 @@ ApplicationWindow {
                             required property int index
                             implicitWidth: tabText.implicitWidth + 8
                             implicitHeight: 34
+                            // Natural width, but able to shrink (eliding) rather than push past the window.
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: implicitWidth
+                            Layout.minimumWidth: 36
                             Label2 {
                                 id: tabText
                                 anchors.centerIn: parent
+                                // Only when really squeezed: a rounding error must not elide the label.
+                                width: tab.width - 8 < implicitWidth - 1 ? tab.width - 8 : implicitWidth
                                 text: win.tabs[tab.index] + (tab.index === 0 && backend.updateCount ? "  " + backend.updateCount : "")
                                 color: win.pageIndex === tab.index ? theme.foreground : theme.dim
                             }
@@ -277,17 +286,20 @@ ApplicationWindow {
             StackLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                // The hidden pages' minimum widths would otherwise widen the shown one past the window.
+                Layout.minimumWidth: 0
                 currentIndex: win.pageIndex
                 InstalledPage {
                     id: installed
+                    room: win.pageWidth
                     onExportRequested: exportDialog.open()
                     onImportRequested: importDialog.open()
                     onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) }
                     onShowDetails: function (a) { details.show(a) }
                 }
-                ExplorePage { id: explore; onShowDetails: function (a) { details.show(a) } }
-                SearchPage { id: search; onShowDetails: function (a) { details.show(a) } }
-                BackupsPage { onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) } }
+                ExplorePage { id: explore; room: win.pageWidth; onShowDetails: function (a) { details.show(a) } }
+                SearchPage { id: search; room: win.pageWidth; onShowDetails: function (a) { details.show(a) } }
+                BackupsPage { room: win.pageWidth; onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) } }
                 SettingsPage { onAddFolderRequested: folderDialog.open(); onAboutRequested: about.open() }
             }
 

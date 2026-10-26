@@ -60,7 +60,7 @@ ScrollView {
             delegate: RowLayout {
                 required property var modelData
                 Layout.fillWidth: true
-                Label2 { text: modelData; Layout.fillWidth: true; Layout.minimumWidth: 60; elide: Text.ElideMiddle }
+                Label2 { text: modelData; Layout.fillWidth: true; Layout.minimumWidth: 20; elide: Text.ElideMiddle }
                 Label2 { text: page.s.roots.indexOf(modelData) >= 0 ? "added by hand" : "detected"; dim: true; font.pixelSize: 11 }
                 Btn { text: "Open"; subtle: true; onClicked: backend.openPath(modelData) }
                 Btn {
@@ -117,9 +117,10 @@ ScrollView {
         Item { height: 10 }
         SectionTitle { text: "Backups" }
         Check { id: beforeUpdate; Layout.fillWidth: true; text: "Back up WTF before updating several addons at once" }
-        RowLayout {
+        Flow {
+            Layout.fillWidth: true
             spacing: 10
-            Label2 { text: "Keep the last" }
+            Label2 { text: "Keep the last"; height: keep.height; verticalAlignment: Text.AlignVCenter }
             SpinBox {
                 id: keep
                 from: 1
@@ -131,7 +132,7 @@ ScrollView {
                 palette.button: theme.raised
                 palette.buttonText: theme.foreground
             }
-            Label2 { text: "backups per client" }
+            Label2 { text: "backups per client"; height: keep.height; verticalAlignment: Text.AlignVCenter }
         }
 
         Item { height: 10 }
