@@ -1,4 +1,4 @@
-"""What omaforge installed, and per-addon preferences, per client.
+"""What omaforge installed, and per-addon preferences, per client; starred addons, for all clients.
 
 Stored in ~/.local/share/omaforge/state.json. Writes go through a lock file
 so the GUI and a timer-driven `omaforge update --all` cannot interleave.
@@ -35,6 +35,9 @@ def _problem(data) -> str | None:
             entries = client.get(part, {})
             if not isinstance(entries, dict) or not all(isinstance(v, dict) for v in entries.values()):
                 return f"{part} of client {key!r} is not an object of objects"
+    starred = data.get("starred", {})
+    if not isinstance(starred, dict) or not all(isinstance(v, dict) for v in starred.values()):
+        return "starred is not an object of objects"
     return None
 
 
@@ -83,7 +86,7 @@ class State:
             return ""
         moved, problem = self.recovered
         return (f"{self.path} could not be read: {problem}. It was moved to {moved} and a new one started; "
-                "pins, ignores, channels and install sources recorded there are reset until you restore it.")
+                "pins, ignores, channels, stars and install sources recorded there are reset until you restore it.")
 
     def reload(self) -> None:
         self.data = self._load()
@@ -131,3 +134,8 @@ class State:
     def set_pref(self, key: str, addon_key: str, **values) -> None:
         prefs = self.client(key)["prefs"].setdefault(addon_key, {})
         prefs.update(values)
+
+    # Stars: provider:id -> what is remembered about the addon. Not per client, and
+    # not tied to an install, so they outlive uninstalling the addon ------------
+    def stars(self) -> dict[str, dict]:
+        return self.data.setdefault("starred", {})

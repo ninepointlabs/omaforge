@@ -111,7 +111,7 @@ ColumnLayout {
             readonly property var a: modelData
             readonly property bool canUpdate: a.update_available && !a.pinned && !a.ignored
             // Narrow rows keep Update and put channel, Pin, Ignore and Remove in a menu.
-            readonly property bool roomy: page.room >= 32 + 160 + 130 + 92 + 74 + 78 + 78 + removeProbe.implicitWidth + 6 * 12
+            readonly property bool roomy: page.room >= 32 + 42 + 160 + 130 + 92 + 74 + 78 + 78 + removeProbe.implicitWidth + 6 * 12
             width: list.width
             height: 58
             color: hover.hovered ? theme.surface : "transparent"
@@ -126,6 +126,10 @@ ColumnLayout {
                 anchors.leftMargin: 16
                 anchors.rightMargin: 16
                 spacing: 12
+
+                // An addon with no known source has nothing a star could be kept under.
+                StarBtn { addon: row.a; visible: !!row.a.provider }
+                Item { visible: !row.a.provider; Layout.preferredWidth: 30 }
 
                 ColumnLayout {
                     Layout.fillWidth: true

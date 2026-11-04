@@ -10,6 +10,7 @@ import copy
 import json
 import os
 import subprocess
+import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -21,6 +22,7 @@ from omaforge.buildkey import builtin_curseforge_key
 from omaforge.config import ConfigError
 from omaforge.core.describe import clean_html
 from omaforge.core.manager import Manager
+from omaforge.core.models import star_keys, star_record, starred_addon
 
 
 def markdown_to_html(text: str) -> str:
@@ -42,6 +44,9 @@ class Backend(QObject):
     changed = Signal()
     busyChanged = Signal()
     detailsChanged = Signal()
+    # Apart from changed, because changed rebuilds the addon lists and that scrolls them
+    # back to the top: a star must not do that. Lists of stars get both, see __init__.
+    starsChanged = Signal()
     toast = Signal(str, str)  # kind (info, error), message
     _done = Signal(object, object, object)  # callback, result, error
 
@@ -69,6 +74,8 @@ class Backend(QObject):
         self._config_error = ""  # a settings file omaforge can't read, shown instead of the clients
         self._config_error_path = ""
         self._state_reported = False
+        self._stars: list[dict] = []
+        self.changed.connect(self.starsChanged)  # whether a star is installed can change with anything
         self._done.connect(self._finish)
         self._run(self._load_clients, self._clients_loaded, "Looking for World of Warcraft")
 
@@ -183,6 +190,14 @@ class Backend(QObject):
     def exploreHasMore(self):
         return self._explore_more
 
+    @Property("QVariantList", notify=starsChanged)
+    def starred(self):
+        return self._mark_installed(self._stars)
+
+    @Property("QVariantMap", notify=starsChanged)
+    def starredKeys(self):
+        return {f"{s['provider']}:{s['id']}": True for s in self._stars}
+
     @Property("QVariantMap", notify=detailsChanged)
     def details(self):
         return self._details
@@ -230,20 +245,20 @@ class Backend(QObject):
         clients = self.m.clients(refresh=True)
         providers = [{"name": p.name, "label": p.label, "available": p.available, "reason": p.unavailable_reason}
                      for p in self.m.providers.values()]
-        return [c.to_dict() for c in clients], providers, self.m.explore_sources()
+        return [c.to_dict() for c in clients], providers, self.m.explore_sources(), self.m.stars()
 
     def _clients_loaded(self, result) -> None:
         if isinstance(result, ConfigError):
             self._config_error, self._config_error_path = str(result), str(result.path or "")
             self._clients, self._providers, self._explore_sources = [], [], []
-            self._current, self._addons, self._checked = "", [], False
+            self._current, self._addons, self._checked, self._stars = "", [], False, []
             self.changed.emit()
             return
         self._config_error = self._config_error_path = ""
         if self.m.state.recovered and not self._state_reported:
             self._state_reported = True
             self.toast.emit("error", self.m.state.recovery_message())
-        self._clients, self._providers, self._explore_sources = result
+        self._clients, self._providers, self._explore_sources, self._stars = result
         names = [s["name"] for s in self._explore_sources]
         if self._explore["provider"] not in names:
             self._explore.update(provider=names[0] if names else "", category="", client="")
@@ -382,6 +397,34 @@ class Backend(QObject):
     @Slot(str, str)
     def setChannel(self, key: str, channel: str) -> None:
         self._pref(key, channel=channel)
+
+    # Stars ----------------------------------------------------------------
+    @Slot("QVariantMap", bool)
+    def setStarred(self, addon, value: bool) -> None:
+        """Show it at once, since other jobs may hold up the worker; put it back if it can't be saved."""
+        keys = star_keys(addon)
+        if self.m is None or not keys:
+            return
+        kept = [s for s in self._stars if f"{s['provider']}:{s['id']}" not in keys]
+        if value:
+            kept.insert(0, starred_addon(keys[0], star_record(addon, int(time.time()))))
+        self._stars = kept
+        self.starsChanged.emit()
+
+        def work():
+            try:
+                self.m.set_starred(addon, value)
+            except OSError as e:
+                return self.m.stars(), str(e)
+            return None
+
+        def then(failed):
+            if failed:
+                self._stars, error = failed
+                self.starsChanged.emit()
+                self.toast.emit("error", f"Couldn't save the star: {error}")
+
+        self._run(work, then)
 
     # Search / install -----------------------------------------------------
     @Slot(str, "QVariantList")

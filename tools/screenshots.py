@@ -89,7 +89,7 @@ def main() -> int:
         ("search", lambda: (win.setProperty("pageIndex", 2),
                             set_search_sort(),
                             backend.search("weakauras", [s["name"] for s in backend.providers if s["available"]]))),
-        ("backups", lambda: (win.setProperty("pageIndex", 3), backend.loadBackups())),
+        ("backups", lambda: (win.setProperty("pageIndex", 4), backend.loadBackups())),
     ]
     for name in args.themes.split(","):
         scenes.append((None, lambda n=name: (use_theme(n), win.setProperty("pageIndex", 0))))
