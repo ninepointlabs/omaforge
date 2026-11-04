@@ -34,6 +34,40 @@ class RemoteAddon:
         return asdict(self)
 
 
+# What a star remembers, so the addon can be listed without asking its source again.
+# Left out on purpose: version, updated, compatible and rank describe one game version
+# at one moment, and a star is for every game version, for as long as it stays.
+STAR_FIELDS = ("name", "author", "summary", "url", "icon", "downloads", "favorites", "categories", "external_only")
+
+
+def star_keys(addon: dict) -> list[str]:
+    """provider:id of a remote or installed addon as a dict, then those its TOC links to. Empty without a source."""
+    provider, addon_id = addon.get("provider"), addon.get("id") or addon.get("source_id")
+    if not provider or not addon_id:
+        return []
+    links = addon.get("links") or {}
+    return [f"{provider}:{addon_id}"] + [f"{p}:{i}" for p, i in links.items() if f"{p}:{i}" != f"{provider}:{addon_id}"]
+
+
+def star_record(addon: dict, starred_at: int) -> dict:
+    """What state.json keeps for a star; fields of the wrong type are dropped."""
+    blank = RemoteAddon("", "", "")
+    kept = {f: addon[f] for f in STAR_FIELDS if isinstance(addon.get(f), type(getattr(blank, f)))}
+    return {**kept, "starred_at": starred_at}
+
+
+def starred_addon(key: str, record: dict) -> dict | None:
+    """A star as a whole RemoteAddon dict for the UI, or None if its key isn't provider:id."""
+    provider, _, addon_id = key.partition(":")
+    if not provider or not addon_id:
+        return None
+    starred_at = record.get("starred_at")
+    kept = star_record(record, starred_at if isinstance(starred_at, int) else 0)
+    starred_at = kept.pop("starred_at")
+    kept["name"] = kept.get("name") or addon_id
+    return {**RemoteAddon(provider, addon_id, **kept).to_dict(), "starred_at": starred_at}
+
+
 @dataclass
 class Release:
     provider: str

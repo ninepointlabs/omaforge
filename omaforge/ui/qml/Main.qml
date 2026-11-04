@@ -31,10 +31,11 @@ ApplicationWindow {
     palette.mid: theme.border
     palette.dark: theme.border
 
-    // 0 installed, 1 explore, 2 search, 3 backups, 4 settings
+    // 0 installed, 1 explore, 2 search, 3 starred, 4 backups, 5 settings
     property int pageIndex: 0
-    readonly property var tabs: ["Installed", "Explore", "Search", "Backups", "Settings"]
-    readonly property int settingsPage: 4
+    readonly property var tabs: ["Installed", "Explore", "Search", "Starred", "Backups"]
+    readonly property int backupsPage: 4
+    readonly property int settingsPage: 5
     // Below this the sidebar narrows and rows and toolbars fold their extra actions into menus.
     readonly property bool narrow: width < 1000
     readonly property real pageWidth: width - (narrow ? 190 : 240) - 1
@@ -47,7 +48,7 @@ ApplicationWindow {
     function go(i) {
         pageIndex = i
         if (i === 1) backend.ensureExplore()
-        if (i === 3) backend.loadBackups()
+        if (i === backupsPage) backend.loadBackups()
     }
 
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
@@ -59,6 +60,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+2"; onActivated: win.go(1) }
     Shortcut { sequence: "Ctrl+3"; onActivated: win.go(2) }
     Shortcut { sequence: "Ctrl+4"; onActivated: win.go(3) }
+    Shortcut { sequence: "Ctrl+5"; onActivated: win.go(4) }
     Shortcut { sequence: "Ctrl+,"; onActivated: win.go(win.settingsPage) }
     Shortcut { sequence: "F1"; onActivated: about.open() }
     Shortcut { sequence: "Alt+Down"; onActivated: win.stepClient(1) }
@@ -71,7 +73,7 @@ ApplicationWindow {
     readonly property string clientKey: backend.currentClient
     onClientKeyChanged: {
         if (pageIndex === 1) backend.ensureExplore()
-        if (pageIndex === 3) backend.loadBackups()
+        if (pageIndex === backupsPage) backend.loadBackups()
     }
 
     RowLayout {
@@ -210,9 +212,9 @@ ApplicationWindow {
                 }
                 RowLayout {
                     id: tabRow
-                    spacing: 18
+                    spacing: win.narrow ? 12 : 18
                     Repeater {
-                        model: 4
+                        model: win.tabs.length
                         delegate: Item {
                             id: tab
                             required property int index
@@ -299,6 +301,7 @@ ApplicationWindow {
                 }
                 ExplorePage { id: explore; room: win.pageWidth; onShowDetails: function (a) { details.show(a) } }
                 SearchPage { id: search; room: win.pageWidth; onShowDetails: function (a) { details.show(a) } }
+                StarredPage { id: starredPage; room: win.pageWidth; onShowDetails: function (a) { details.show(a) } }
                 BackupsPage { room: win.pageWidth; onConfirm: function (t, m, c, d, a) { confirm.ask(t, m, c, d, a) } }
                 SettingsPage { onAddFolderRequested: folderDialog.open(); onAboutRequested: about.open() }
             }

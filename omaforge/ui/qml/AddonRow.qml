@@ -12,9 +12,10 @@ Rectangle {
     readonly property var r: modelData
     // Narrow rows show just Install; the details view has the page link and the channel.
     property real room: width  // the list's share of the window, see InstalledPage.room
-    readonly property bool roomy: room >= 32 + (number > 0 ? 42 : 0) + 56 + 160 + providerLabel.implicitWidth
+    readonly property bool roomy: room >= 32 + (number > 0 ? 42 : 0) + 42 + 56 + 160 + providerLabel.implicitWidth
                                            + pageBtn.implicitWidth + 92 + 100 + 4 * 12
     signal detailsRequested()
+    signal starToggling()
 
     height: 74
     color: hover.hovered ? theme.surface : "transparent"
@@ -36,6 +37,7 @@ Rectangle {
             horizontalAlignment: Text.AlignRight
             Layout.preferredWidth: 30
         }
+        StarBtn { addon: row.r; onToggling: row.starToggling() }
         Rectangle {
             Layout.preferredWidth: 44
             Layout.preferredHeight: 44
@@ -96,7 +98,7 @@ Rectangle {
             Layout.preferredWidth: row.roomy ? 100 : 84
             text: row.r.installed ? "Installed" : "Install"
             primary: !row.r.installed
-            enabled: !row.r.installed && !backend.busy
+            enabled: !row.r.installed && !backend.busy && backend.currentClient !== ""
             onClicked: backend.install(row.r.provider, row.r.id, channel.currentText)
         }
     }

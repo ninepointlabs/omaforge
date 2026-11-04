@@ -13,7 +13,8 @@ from omaforge.core import discovery, flavors, install, scan
 from omaforge.core.discovery import Client
 from omaforge.core.flavors import parse_version
 from omaforge.core.http import Http, HttpError
-from omaforge.core.models import CHANNELS, AddonDetails, InstalledAddon, Release, RemoteAddon
+from omaforge.core.models import (CHANNELS, AddonDetails, InstalledAddon, Release, RemoteAddon, star_keys, star_record,
+                                  starred_addon)
 from omaforge.core.providers import GameContext, Provider, ProviderError, build as build_providers
 from omaforge.core.providers.base import DistributionDisabled
 from omaforge.core.state import State
@@ -480,6 +481,25 @@ class Manager:
             raise ManagerError(f"channel must be one of {', '.join(CHANNELS)}")
         with self.state.transaction() as st:
             st.set_pref(client.key, key, **values)
+
+    # Stars ----------------------------------------------------------------
+    def stars(self) -> list[dict]:
+        """Starred addons as RemoteAddon dicts, the most recently starred first."""
+        self.state.reload()
+        found = (starred_addon(k, r) for k, r in self.state.stars().items())
+        return sorted((a for a in found if a), key=lambda a: (-a["starred_at"], a["name"].lower()))
+
+    def set_starred(self, addon: dict, value: bool) -> None:
+        """Star a remote or installed addon (as a dict), or take the star off it and the sources its TOC links to."""
+        keys = star_keys(addon)
+        if not keys:
+            raise ManagerError(f"{addon.get('name', 'this addon')}: no known source, so it can't be starred")
+        with self.state.transaction() as st:
+            if value:
+                st.stars()[keys[0]] = star_record(addon, int(time.time()))
+            else:
+                for key in keys:
+                    st.stars().pop(key, None)
 
     # Backups --------------------------------------------------------------
     def backup(self, client: Client, reason: str = "manual") -> backupmod.Backup | None:

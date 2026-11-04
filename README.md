@@ -223,7 +223,7 @@ systemctl --user enable --now omaforge-update.timer
 |---|---|
 | <kbd>Ctrl</kbd>+<kbd>R</kbd> | check for updates |
 | <kbd>Ctrl</kbd>+<kbd>U</kbd> | update everything that isn't pinned or ignored |
-| <kbd>Ctrl</kbd>+<kbd>1</kbd>…<kbd>4</kbd> | Installed, Explore, Search, Backups |
+| <kbd>Ctrl</kbd>+<kbd>1</kbd>…<kbd>5</kbd> | Installed, Explore, Search, Starred, Backups |
 | <kbd>Ctrl</kbd>+<kbd>K</kbd> | search |
 | <kbd>Ctrl</kbd>+<kbd>F</kbd> | filter installed addons |
 | <kbd>Ctrl</kbd>+<kbd>,</kbd> | settings |
@@ -236,6 +236,11 @@ Click an addon anywhere outside its buttons to see its description,
 screenshots and links from its source. Click a screenshot to see it full size
 and use <kbd>←</kbd> <kbd>→</kbd> to browse. <kbd>Esc</kbd> or a click outside
 closes either view.
+
+Click the <kbd>☆</kbd> on an addon to come back to it later, installed or not.
+The Starred tab lists every star, and Install there puts the addon into the game
+version selected in the sidebar. Stars are shared by all your game versions, and
+stay when you remove the addon. An addon with no known source can't be starred.
 
 Hover over an addon's folder count to see its folders, and over a client in
 the sidebar to see where it lives.
@@ -326,7 +331,7 @@ to install. To add a branch without a code change, put rules in
 |---|---|
 | `~/.config/omaforge/config.toml` | settings and API keys (mode 0600) |
 | `~/.config/omaforge/flavors.toml` | optional extra flavor rules |
-| `~/.local/share/omaforge/state.json` | what omaforge installed; pins, ignores, channels |
+| `~/.local/share/omaforge/state.json` | what omaforge installed; pins, ignores, channels, stars |
 | `~/.local/share/omaforge/backups/` | WTF snapshots per client |
 | `~/.cache/omaforge/` | cached API responses |
 

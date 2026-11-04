@@ -71,11 +71,11 @@ def test_main_window_loads_without_qml_warnings(app, wow_root, tmp_path):
         assert [a["name"] for a in backend.addons] == ["Local Thing"]
 
         win = engine.rootObjects()[0]
-        for page in (1, 2, 3, 4, 0):
+        for page in (1, 2, 3, 4, 5, 0):
             win.setProperty("pageIndex", page)
             if page == 1:
                 backend.ensureExplore()
-            if page == 3:
+            if page == 4:
                 backend.loadBackups()
             wait(app, backend)
         assert backend.exploreSources == []  # every provider is disabled here
@@ -263,7 +263,7 @@ def test_broken_config_is_reported_and_never_saved_over(app, wow_root, tmp_path)
         assert "No World of Warcraft install found" not in "".join(
             str(i.property("text")) for i in _visible(win.contentItem()))
 
-        win.setProperty("pageIndex", 4)
+        win.setProperty("pageIndex", 5)
         wait(app, backend)
         assert not win.findChild(QObject, "saveSettings").property("enabled")
         assert win.findChild(QQuickItem, "settingsBroken").isVisible()
@@ -335,7 +335,7 @@ def test_window_fits_half_a_screen(app, wow_root, tmp_path, width, font):
         win.grabWindow()
         win.setProperty("width", width)
         win.setProperty("height", 700)
-        for page in (0, 2, 3, 4):
+        for page in (0, 2, 3, 4, 5):
             win.setProperty("pageIndex", page)
             wait(app, backend)
             win.grabWindow()  # renders a frame, which is when layouts are polished offscreen

@@ -112,6 +112,11 @@ Popup {
                     text: Fmt.stats(pop.a)
                 }
             }
+            StarBtn {
+                Layout.alignment: Qt.AlignTop
+                visible: pop.provider !== "" && pop.addonId !== ""
+                addon: Object.assign({}, pop.a, { provider: pop.provider, id: pop.addonId, links: pop.item.links || {} })
+            }
             Btn {
                 Layout.alignment: Qt.AlignTop
                 text: "✕"
@@ -264,7 +269,7 @@ Popup {
                 Layout.preferredWidth: 100
                 text: pop.installed ? "Installed" : "Install"
                 primary: !pop.installed
-                enabled: !pop.installed && !backend.busy && pop.addonId !== ""
+                enabled: !pop.installed && !backend.busy && pop.addonId !== "" && backend.currentClient !== ""
                 onClicked: backend.install(pop.provider, pop.addonId, channel.currentText)
             }
         }
