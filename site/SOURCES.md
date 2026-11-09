@@ -1,6 +1,6 @@
 # Site artwork sources
 
-omaforge.ninepointlabs.com is an unofficial fan page, not affiliated with or
+omaforge.myazerothlife.com is an unofficial fan page, not affiliated with or
 endorsed by Blizzard Entertainment. All Blizzard artwork below is © Blizzard
 Entertainment, Inc.; World of Warcraft and Warcraft are trademarks of Blizzard
 Entertainment, Inc. The MIT licence of this repository covers omaforge's code
