@@ -1,6 +1,6 @@
 name: Site
 
-# Publishes site/ to GitHub Pages at omaforge.ninepointlabs.com.
+# Publishes site/ to GitHub Pages at omaforge.myazerothlife.com.
 on:
   push:
     branches: [main]

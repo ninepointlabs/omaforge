@@ -1,4 +1,4 @@
-// omaforge.ninepointlabs.com: quest log, loot, toasts and other small joys.
+// omaforge.myazerothlife.com: quest log, loot, toasts and other small joys.
 
 (() => {
   const $ = (sel, root = document) => root.querySelector(sel);
