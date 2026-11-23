@@ -144,3 +144,10 @@ def test_backup_pruning(tmp_path):
 
 def test_backup_without_wtf(tmp_path):
     assert backup.create(tmp_path / "missing", "k") is None
+
+
+def test_archive_over_the_expanded_limit_is_rejected(tmp_path):
+    data = make_zip({"Big": {"Big.toc": "## Interface: 110000\n", "a.lua": "x" * 4096}})
+    with pytest.raises(install.InstallError, match="expands to more than"):
+        install.install_zip(_write(tmp_path, data), tmp_path / "Interface/AddOns", max_uncompressed=1024)
+    assert install.install_zip(_write(tmp_path, data), tmp_path / "Interface/AddOns", max_uncompressed=1 << 20) == ["Big"]

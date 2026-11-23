@@ -236,3 +236,10 @@ def test_display_name():
     assert display_name("WeakAuras", "WeakAuras/WeakAuras2") == "WeakAuras"
     assert display_name("<DBM Core> Main Core", "DeadlyBossMods/DeadlyBossMods") == "Deadly Boss Mods"
     assert display_name("", "o/some-addon_name") == "some addon name"
+
+
+def test_install_uses_the_configured_download_limit(world):
+    world.publish("v1", ["Foo"])
+    world.m.cfg["downloads"]["max_size_mb"] = 700
+    world.m.install(world.retail, "github", "o/Foo")
+    assert world.http.max_bytes == 700 << 20

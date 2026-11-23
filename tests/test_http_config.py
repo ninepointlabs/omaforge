@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import pytest
 
 from omaforge import config
-from omaforge.core.http import Http, OfflineError, RateLimitError
+from omaforge.core.http import Http, HttpError, OfflineError, RateLimitError
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -113,3 +113,26 @@ def test_config_roundtrip_and_permissions(tmp_path):
 def test_env_overrides_secrets(monkeypatch):
     monkeypatch.setenv("OMAFORGE_CURSEFORGE_API_KEY", "envkey")
     assert config.load()["providers"]["curseforge"]["api_key"] == "envkey"
+
+
+def test_download_over_the_limit_is_refused(server, tmp_path):
+    with pytest.raises(HttpError, match="download is larger than the .* limit"):
+        Http(cache_dir=tmp_path).download(f"{server}/zip", tmp_path / "f.zip", max_bytes=50)
+    assert not list(tmp_path.glob("*.zip*"))
+
+
+def test_download_limit_setting(tmp_path):
+    assert config.download_limits(config.load()) == (2048 << 20, (2048 << 20) * config.EXPAND_FACTOR)
+    cfg = config.load()
+    cfg["downloads"]["max_size_mb"] = 3000
+    config.save(cfg)
+    assert config.download_limits(config.load())[0] == 3000 << 20
+    assert config.download_limits({}) == (2048 << 20, (2048 << 20) * config.EXPAND_FACTOR)
+
+
+@pytest.mark.parametrize("value", ["0", "-5", "100000", "1.5", '"big"'])
+def test_download_limit_must_be_a_sane_number(tmp_path, value):
+    config.config_path().parent.mkdir(parents=True, exist_ok=True)
+    config.config_path().write_text(f"[downloads]\nmax_size_mb = {value}\n")
+    with pytest.raises(config.ConfigError, match="downloads.max_size_mb"):
+        config.load()

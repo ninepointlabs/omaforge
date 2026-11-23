@@ -15,7 +15,7 @@ from pathlib import Path, PurePosixPath
 
 from omaforge.core import toc as tocmod
 
-MAX_UNCOMPRESSED = 1024 * 1024 * 1024
+MAX_UNCOMPRESSED = 8192 << 20  # default; the Manager passes the configured limit
 MAX_FILES = 50_000
 
 
@@ -30,7 +30,7 @@ class ConflictError(InstallError):
         self.conflicts = conflicts
 
 
-def _safe_members(zf: zipfile.ZipFile) -> list[zipfile.ZipInfo]:
+def _safe_members(zf: zipfile.ZipFile, max_uncompressed: int = MAX_UNCOMPRESSED) -> list[zipfile.ZipInfo]:
     members, total = [], 0
     infos = zf.infolist()
     if len(infos) > MAX_FILES:
@@ -43,17 +43,18 @@ def _safe_members(zf: zipfile.ZipFile) -> list[zipfile.ZipInfo]:
         if stat.S_ISLNK(info.external_attr >> 16):
             raise InstallError(f"symlink in archive: {info.filename}")
         total += info.file_size
-        if total > MAX_UNCOMPRESSED:
-            raise InstallError("archive expands to more than 1 GiB")
+        if total > max_uncompressed:
+            raise InstallError(f"archive expands to more than {max_uncompressed >> 20} MiB "
+                               "(raise the download limit under Settings → Network)")
         members.append(info)
     return members
 
 
-def extract(zip_path: Path, dest: Path) -> list[str]:
+def extract(zip_path: Path, dest: Path, max_uncompressed: int = MAX_UNCOMPRESSED) -> list[str]:
     """Extract to `dest` and return the addon folder names found at its top level."""
     try:
         with zipfile.ZipFile(zip_path) as zf:
-            members = _safe_members(zf)
+            members = _safe_members(zf, max_uncompressed)
             dest.mkdir(parents=True)
             for info in members:
                 target = dest / info.filename.replace("\\", "/")
@@ -90,6 +91,7 @@ def install_zip(
     previous: list[str] | tuple[str, ...] = (),
     owners: dict[str, str] | None = None,
     force: bool = False,
+    max_uncompressed: int = MAX_UNCOMPRESSED,
 ) -> list[str]:
     """Install an addon archive.
 
@@ -102,7 +104,7 @@ def install_zip(
     stage = _scratch(addons_dir, "stage")
     trash = _scratch(addons_dir, "trash")
     try:
-        new = extract(zip_path, stage)
+        new = extract(zip_path, stage, max_uncompressed)
         conflicts = {f: o for f, o in (owners or {}).items() if f in new}
         if conflicts and not force:
             raise ConflictError(conflicts)

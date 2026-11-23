@@ -29,7 +29,16 @@ DEFAULTS: dict = {
     },
     "backups": {"keep": 10, "before_bulk_update": True},
     "network": {"offline": False},
+    # Largest addon archive omaforge will download, in MiB. Voice-over packs
+    # (Spoken Audio and the like) ship archives of 500+ MiB.
+    "downloads": {"max_size_mb": 2048},
 }
+
+MIN_DOWNLOAD_MB = 1
+MAX_DOWNLOAD_MB = 64 * 1024
+# An archive may expand to this many times the download limit before it is
+# refused: a zip-bomb guard that still leaves room for well-compressed addons.
+EXPAND_FACTOR = 4
 
 
 class ConfigError(Exception):
@@ -81,7 +90,18 @@ def _check(defaults: dict, user: dict, prefix: str = "") -> str | None:
             problem = _check(want, value, f"{name}.")
             if problem:
                 return problem
+    if prefix == "" and "max_size_mb" in user.get("downloads", {}):
+        mb = user["downloads"]["max_size_mb"]
+        if not MIN_DOWNLOAD_MB <= mb <= MAX_DOWNLOAD_MB:
+            return f"downloads.max_size_mb must be between {MIN_DOWNLOAD_MB} and {MAX_DOWNLOAD_MB}, not {mb}"
     return None
+
+
+def download_limits(cfg: dict) -> tuple[int, int]:
+    """(largest download, largest extracted size) in bytes, from `downloads.max_size_mb`."""
+    mb = cfg.get("downloads", {}).get("max_size_mb", DEFAULTS["downloads"]["max_size_mb"])
+    mb = min(max(int(mb), MIN_DOWNLOAD_MB), MAX_DOWNLOAD_MB)
+    return mb << 20, (mb << 20) * EXPAND_FACTOR
 
 
 def read_user(path: Path | None = None) -> dict:

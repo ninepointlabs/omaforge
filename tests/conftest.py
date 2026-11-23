@@ -95,6 +95,7 @@ class FakeHttp:
         return value(payload) if callable(value) else value
 
     def download(self, url, dest, headers=None, max_bytes=0):
+        self.max_bytes = max_bytes
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(self.files[url])
         return dest

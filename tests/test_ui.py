@@ -357,3 +357,32 @@ def test_window_fits_half_a_screen(app, wow_root, tmp_path, width, font):
     finally:
         qInstallMessageHandler(previous)
     assert messages == []
+
+
+def test_download_limit_is_shown_and_saved(app, wow_root, tmp_path):
+    from PySide6.QtQuick import QQuickItem
+
+    cfg = copy.deepcopy(config.DEFAULTS)
+    cfg["roots"] = {"paths": [str(wow_root)], "autodetect": False}
+    for p in cfg["providers"].values():
+        p["enabled"] = False
+    config.save(cfg)
+    messages, previous = _qml_messages()
+    try:
+        backend = Backend(Manager(cfg=cfg, http=FakeHttp(), home=tmp_path / "home"))
+        engine, win = _load(backend)
+        wait(app, backend)
+        win.setProperty("pageIndex", 5)
+        wait(app, backend)
+        spin = win.findChild(QQuickItem, "maxDownload")
+        assert spin.property("value") == 2048 == backend.settings["maxDownloadMb"]
+        backend.saveSettings({"autodetect": False, "githubToken": "", "curseforgeKey": "", "wagoKey": "",
+                              "backupsKeep": 10, "backupBeforeUpdate": True, "offline": False,
+                              "maxDownloadMb": 4096})
+        wait(app, backend)
+        assert config.load()["downloads"]["max_size_mb"] == 4096
+        assert backend.m.cfg["downloads"]["max_size_mb"] == 4096
+        backend.shutdown()
+    finally:
+        qInstallMessageHandler(previous)
+    assert messages == []

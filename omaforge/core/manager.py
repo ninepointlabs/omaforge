@@ -427,11 +427,13 @@ class Manager:
         zip_path = dl_dir / f"{uuid.uuid4().hex}.zip"
         provider = self.providers[release.provider]
         try:
-            self.http.download(release.download_url, zip_path, provider.download_headers(release))
+            max_download, max_expanded = configmod.download_limits(self.cfg)
+            self.http.download(release.download_url, zip_path, provider.download_headers(release), max_download)
             with self.state.transaction() as st:
                 owners = {f: k for k, r in st.addons(client.key).items() if k not in (key, replace_key)
                           for f in r.get("folders", [])}
-                new = install.install_zip(zip_path, client.addons_dir, previous=previous, owners=owners, force=force)
+                new = install.install_zip(zip_path, client.addons_dir, previous=previous, owners=owners, force=force,
+                                          max_uncompressed=max_expanded)
                 if release.provider == "github":
                     # A repo name ("WeakAuras2") is a poor display name; use the addon's own title.
                     folders = scan.read_folders(client.addons_dir, self._suffixes(client))
