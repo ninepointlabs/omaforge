@@ -232,6 +232,7 @@ class Backend(QObject):
             "backupsKeep": cfg["backups"]["keep"],
             "backupBeforeUpdate": cfg["backups"]["before_bulk_update"],
             "offline": cfg["network"]["offline"],
+            "maxDownloadMb": cfg["downloads"]["max_size_mb"],
             "configPath": str(configmod.config_path()),
         }
 
@@ -660,6 +661,9 @@ class Backend(QObject):
             cfg["backups"]["keep"] = int(s["backupsKeep"])
             cfg["backups"]["before_bulk_update"] = bool(s["backupBeforeUpdate"])
             cfg["network"]["offline"] = bool(s["offline"])
+            if "maxDownloadMb" in s:
+                cfg["downloads"]["max_size_mb"] = min(max(int(s["maxDownloadMb"]), configmod.MIN_DOWNLOAD_MB),
+                                                      configmod.MAX_DOWNLOAD_MB)
             configmod.save(cfg)
             self.m = Manager(cfg=configmod.load())
 

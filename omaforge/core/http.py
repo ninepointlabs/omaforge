@@ -55,6 +55,10 @@ class OfflineError(HttpError):
     pass
 
 
+# Default only; the Manager passes the configured limit (config.downloads.max_size_mb).
+MAX_DOWNLOAD = 2048 << 20
+
+
 class RateLimitError(HttpError):
     def __init__(self, message: str, reset_at: float | None = None):
         super().__init__(message, 429)
@@ -194,7 +198,7 @@ class Http:
     def get_json(self, url: str, headers: dict | None = None, ttl: float = 3600):
         return self.get(url, headers, ttl).json()
 
-    def download(self, url: str, dest: Path, headers: dict | None = None, max_bytes: int = 512 * 1024 * 1024) -> Path:
+    def download(self, url: str, dest: Path, headers: dict | None = None, max_bytes: int = MAX_DOWNLOAD) -> Path:
         """Stream a file to `dest` (not cached). Raises OfflineError when offline."""
         if self.offline:
             raise OfflineError("offline: cannot download")
@@ -207,7 +211,8 @@ class Http:
                 while chunk := r.read(1 << 16):
                     total += len(chunk)
                     if total > max_bytes:
-                        raise HttpError(f"{url}: download larger than {max_bytes} bytes")
+                        raise HttpError(f"{url}: download is larger than the {max_bytes >> 20} MiB limit "
+                                        "(raise it under Settings → Network, or downloads.max_size_mb in config.toml)")
                     fh.write(chunk)
             tmp.replace(dest)
         except urllib.error.HTTPError as e:

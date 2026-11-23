@@ -19,6 +19,7 @@ ScrollView {
         keep.value = s.backupsKeep
         beforeUpdate.checked = s.backupBeforeUpdate
         offline.checked = s.offline
+        maxDownload.value = s.maxDownloadMb
     }
     Component.onCompleted: load()
     onVisibleChanged: if (visible) load()
@@ -138,6 +139,25 @@ ScrollView {
         Item { height: 10 }
         SectionTitle { text: "Network" }
         Check { id: offline; Layout.fillWidth: true; text: "Offline mode: use cached addon data only" }
+        Flow {
+            Layout.fillWidth: true
+            spacing: 10
+            Label2 { text: "Skip addon downloads larger than"; height: maxDownload.height; verticalAlignment: Text.AlignVCenter }
+            SpinBox {
+                id: maxDownload
+                objectName: "maxDownload"
+                from: 1
+                to: 65536
+                stepSize: 256
+                editable: true
+                font.family: theme.font
+                palette.base: theme.surface
+                palette.text: theme.foreground
+                palette.button: theme.raised
+                palette.buttonText: theme.foreground
+            }
+            Label2 { text: "MiB (voice-over packs can exceed 500 MiB)"; height: maxDownload.height; verticalAlignment: Text.AlignVCenter }
+        }
 
         Item { height: 10 }
         RowLayout {
@@ -153,7 +173,8 @@ ScrollView {
                     wagoKey: wagoKey.text,
                     backupsKeep: keep.value,
                     backupBeforeUpdate: beforeUpdate.checked,
-                    offline: offline.checked
+                    offline: offline.checked,
+                    maxDownloadMb: maxDownload.value
                 })
             }
             Btn { text: "Revert"; subtle: true; onClicked: page.load() }
